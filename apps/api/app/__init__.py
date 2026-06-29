@@ -1,0 +1,1 @@
+"""Japanese Study FastAPI application."""

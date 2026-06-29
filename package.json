@@ -1,0 +1,24 @@
+{
+  "name": "japanese-study",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "node -e \"require(require('path').join(process.env.INIT_CWD||process.cwd(),'scripts','run-dev.cjs'))\"",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:api": "node scripts/run-api-dev.cjs",
+    "generate:hiragana-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_hiragana_audio.py",
+    "generate:katakana-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_katakana_audio.py",
+    "generate:flashcard-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_flashcard_audio.py",
+    "generate:listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_listening_audio.py",
+    "generate:passive-listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_passive_listening_audio.py",
+    "lint": "npm --workspace apps/web run lint",
+    "test": "npm --workspace apps/web run test && PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.5.3"
+  }
+}
