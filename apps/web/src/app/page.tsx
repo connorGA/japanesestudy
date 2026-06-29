@@ -1,46 +1,30 @@
+import Link from "next/link";
 import {
   Brain,
   Drama,
-  MessageCircle,
+  Map,
+  MessageSquare,
   Volume2,
 } from "lucide-react";
+import { LEARNING_PATH_STEPS } from "@/lib/learning-path";
 
 const features = [
-  {
-    title: "Tutor chat",
-    href: "/tutor",
-    icon: MessageCircle,
-  },
-  {
-    title: "Listening",
-    href: "/listening",
-    icon: Volume2,
-  },
-  {
-    title: "Flashcards",
-    href: "/flashcards",
-    icon: Brain,
-  },
-  {
-    title: "Roleplay",
-    href: "/roleplay",
-    icon: Drama,
-  },
-  {
-    title: "Hiragana",
-    href: "/hiragana",
-    symbol: "あ",
-  },
-  {
-    title: "Katakana",
-    href: "/katakana",
-    symbol: "ア",
-  },
-  {
-    title: "Kanji",
-    href: "/kanji",
-    symbol: "漢",
-  },
+  { title: "Learning path", href: "/path", icon: Map },
+  { title: "Phrases", href: "/phrases", icon: MessageSquare },
+  { title: "Listening", href: "/listening", icon: Volume2 },
+  { title: "Flashcards", href: "/flashcards", icon: Brain },
+  { title: "Roleplay", href: "/roleplay", icon: Drama },
+  { title: "Hiragana", href: "/hiragana", symbol: "あ" },
+  { title: "Katakana", href: "/katakana", symbol: "ア" },
+];
+
+const quickLinks = [
+  { title: "Grammar", href: "/grammar" },
+  { title: "Numbers", href: "/numbers" },
+  { title: "Sentences", href: "/sentences" },
+  { title: "Reviews", href: "/reviews" },
+  { title: "Progress", href: "/progress" },
+  { title: "Drills", href: "/tutor" },
 ];
 
 const wheelColors = ["#f7d7e1", "#efb8ca", "#dc8fac", "#c96e92", "#a8577e", "#7f4569", "#59344f"];
@@ -51,7 +35,6 @@ const segmentAngle = 360 / features.length;
 
 function polarToCartesian(radius: number, angleInDegrees: number) {
   const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180;
-
   return {
     x: center + radius * Math.cos(angleInRadians),
     y: center + radius * Math.sin(angleInRadians),
@@ -90,11 +73,18 @@ export default function Home() {
           Japanese Study
         </p>
         <h1 className="mt-4 max-w-5xl text-5xl font-bold tracking-tight text-white drop-shadow-2xl md:text-7xl">
-          Personalized Japanese practice powered by AI, audio, and review.
+          Learn Japanese from zero — kana, phrases, grammar, and conversation.
         </h1>
         <p className="mt-5 max-w-2xl text-lg leading-8 text-white/90 drop-shadow">
-          Choose a learning path from the wheel below and jump straight into focused practice.
+          New here? Start the 10-day learning path. Or pick any mode from the wheel.
         </p>
+
+        <Link
+          className="mt-6 rounded-full bg-white px-6 py-3 text-sm font-bold text-ink shadow-lg transition hover:bg-sakura"
+          href="/path"
+        >
+          Start Day 1 learning path →
+        </Link>
 
         <nav aria-label="Learning sections" className="mt-10 w-full max-w-[35rem]">
           <svg
@@ -147,32 +137,73 @@ export default function Home() {
                 </a>
               );
             })}
-            <circle
-              className="fill-ink/90 stroke-white/80 stroke-[3]"
-              cx={center}
-              cy={center}
-              r={innerRadius - 4}
-            />
-            <text
-              className="fill-white text-[18px] font-bold"
-              dominantBaseline="middle"
-              textAnchor="middle"
-              x={center}
-              y={center - 8}
-            >
-              Start
-            </text>
-            <text
-              className="fill-sakura text-[10px] font-semibold uppercase tracking-[0.24em]"
-              dominantBaseline="middle"
-              textAnchor="middle"
-              x={center}
-              y={center + 14}
-            >
-              Practice
-            </text>
+            <a href="/path">
+              <circle
+                className="fill-ink/90 stroke-white/80 stroke-[3] transition hover:fill-ink"
+                cx={center}
+                cy={center}
+                r={innerRadius - 4}
+              />
+              <text
+                className="pointer-events-none fill-white text-[18px] font-bold"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                x={center}
+                y={center - 8}
+              >
+                Start
+              </text>
+              <text
+                className="pointer-events-none fill-sakura text-[10px] font-semibold uppercase tracking-[0.24em]"
+                dominantBaseline="middle"
+                textAnchor="middle"
+                x={center}
+                y={center + 14}
+              >
+                Path
+              </text>
+            </a>
           </svg>
         </nav>
+
+        <div className="mt-10 flex w-full max-w-3xl flex-wrap justify-center gap-2">
+          {quickLinks.map((link) => (
+            <Link
+              className="rounded-full border border-white/30 bg-white/15 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
+              href={link.href}
+              key={link.href}
+            >
+              {link.title}
+            </Link>
+          ))}
+        </div>
+
+        <section className="mt-12 w-full max-w-3xl rounded-[2rem] border border-white/25 bg-black/25 p-6 text-left backdrop-blur-md">
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sakura">
+            Your first week
+          </p>
+          <ol className="mt-4 space-y-3">
+            {LEARNING_PATH_STEPS.slice(0, 4).map((step) => (
+              <li className="flex items-start gap-3 text-white/90" key={step.id}>
+                <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/20 text-sm font-bold">
+                  {step.day}
+                </span>
+                <div>
+                  <Link className="font-semibold text-white hover:text-sakura" href={step.href}>
+                    {step.title}
+                  </Link>
+                  <p className="mt-0.5 text-sm text-white/75">{step.description}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <Link
+            className="mt-5 inline-block text-sm font-semibold text-sakura hover:text-white"
+            href="/path"
+          >
+            See all 10 steps →
+          </Link>
+        </section>
       </section>
     </main>
   );

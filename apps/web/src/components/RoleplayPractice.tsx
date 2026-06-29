@@ -20,9 +20,9 @@ type SpeechWindow = Window & {
   webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
 };
 
-export function RoleplayPractice() {
+export function RoleplayPractice({ initialScenarioId }: { initialScenarioId?: string }) {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [scenarioId, setScenarioId] = useState("ramen-shop");
+  const [scenarioId, setScenarioId] = useState(initialScenarioId ?? "ramen-shop");
   const [roleplayText, setRoleplayText] = useState("味噌ラーメンを一つお願いします。");
   const [turn, setTurn] = useState<RoleplayTurn | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -31,10 +31,13 @@ export function RoleplayPractice() {
     getScenarios()
       .then((items) => {
         setScenarios(items);
-        setScenarioId(items[0]?.id ?? "ramen-shop");
+        const preferred = initialScenarioId && items.some((item) => item.id === initialScenarioId)
+          ? initialScenarioId
+          : items[0]?.id ?? "ramen-shop";
+        setScenarioId(preferred);
       })
       .catch(() => setScenarios([]));
-  }, []);
+  }, [initialScenarioId]);
 
   async function submitRoleplay() {
     setStatus("Continuing roleplay...");

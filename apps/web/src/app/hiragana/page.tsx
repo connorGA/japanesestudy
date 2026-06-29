@@ -1,9 +1,10 @@
-import { HiraganaPronunciationChart } from "@/components/HiraganaPronunciationChart";
+import { Suspense } from "react";
+import HiraganaPageClient from "./HiraganaPageClient";
 
 export default function HiraganaPage() {
   return (
-    <main className="mx-auto max-w-7xl px-5 py-8 md:px-8">
-      <HiraganaPronunciationChart />
-    </main>
+    <Suspense>
+      <HiraganaPageClient />
+    </Suspense>
   );
 }
