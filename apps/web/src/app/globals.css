@@ -21,3 +21,37 @@ textarea,
 select {
   font: inherit;
 }
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes fall-0 {
+  to {
+    transform: translateY(18rem) rotate(180deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fall-1 {
+  to {
+    transform: translateY(16rem) translateX(2rem) rotate(240deg);
+    opacity: 0;
+  }
+}
+
+@keyframes fall-2 {
+  to {
+    transform: translateY(20rem) translateX(-2rem) rotate(300deg);
+    opacity: 0;
+  }
+}
