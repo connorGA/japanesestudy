@@ -27,7 +27,14 @@ if (!fs.existsSync(uvicorn)) {
 
 const child = spawn(
   uvicorn,
-  ['app.main:app', '--reload', '--app-dir', path.join(root, 'apps', 'api')],
+  [
+    'app.main:app',
+    '--reload',
+    '--port',
+    '8005',
+    '--app-dir',
+    path.join(root, 'apps', 'api'),
+  ],
   {
     stdio: 'inherit',
     cwd: root,

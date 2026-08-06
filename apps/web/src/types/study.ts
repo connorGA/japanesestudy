@@ -46,16 +46,22 @@ export type AudioAsset = {
 
 export type Flashcard = {
   id: string;
+  section: FlashcardSection;
   english: string;
   kana: string;
   romaji: string;
   kind: "vocabulary" | "phrase" | string;
+  onyomi?: string | null;
+  kunyomi?: string | null;
+  example_reading?: string | null;
   example_kana?: string | null;
   example_romaji?: string | null;
   example_english?: string | null;
   word_audio?: AudioAsset | null;
   example_audio?: AudioAsset | null;
 };
+
+export type FlashcardSection = "vocabulary" | "hiragana" | "katakana" | "kanji";
 
 export type ListeningLine = {
   speaker: string;

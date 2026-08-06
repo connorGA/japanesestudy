@@ -1,13 +1,13 @@
 import {
   Brain,
-  Drama,
+  Gamepad2,
   MessageCircle,
   Volume2,
 } from "lucide-react";
 
 const features = [
   {
-    title: "Tutor chat",
+    title: "AI Tutor",
     href: "/tutor",
     icon: MessageCircle,
   },
@@ -22,9 +22,9 @@ const features = [
     icon: Brain,
   },
   {
-    title: "Roleplay",
-    href: "/roleplay",
-    icon: Drama,
+    title: "Arcade",
+    href: "/arcade",
+    icon: Gamepad2,
   },
   {
     title: "Hiragana",
@@ -79,24 +79,32 @@ function wheelSegmentPath(index: number) {
 export default function Home() {
   return (
     <main
-      className="relative isolate min-h-screen overflow-hidden bg-cover bg-center px-5 pb-12 pt-28 md:px-8"
+      className="relative isolate flex min-h-[100svh] flex-col justify-center overflow-x-hidden bg-cover bg-center px-4 pb-8 pt-24 md:overflow-hidden md:px-8 md:pt-24"
       style={{ backgroundImage: "url('/home/sakura-fuji-bg.png')" }}
     >
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/35 via-ink/15 to-ink/55" />
-      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(255,250,240,0.42),transparent_35rem)]" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-ink/45 via-ink/25 to-ink/60" />
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,rgba(255,250,240,0.32),transparent_35rem)]" />
 
       <section className="mx-auto flex max-w-6xl flex-col items-center text-center">
-        <p className="text-sm font-semibold uppercase tracking-[0.36em] text-sakura drop-shadow">
-          Japanese Study
-        </p>
-        <h1 className="mt-4 max-w-5xl text-5xl font-bold tracking-tight text-white drop-shadow-2xl md:text-7xl">
-          Personalized Japanese practice powered by AI, audio, and review.
-        </h1>
-        <p className="mt-5 max-w-2xl text-lg leading-8 text-white/90 drop-shadow">
-          Choose a learning path from the wheel below and jump straight into focused practice.
-        </p>
+        <div
+          className="max-w-2xl rounded-3xl bg-ink/25 px-5 py-3.5 backdrop-blur-[3px] md:px-6 md:py-4"
+          style={{ textShadow: "0 2px 14px rgba(16, 24, 40, 0.65)" }}
+        >
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sakura md:text-xs md:tracking-[0.36em]">
+            Japanese Study
+          </p>
+          <h1 className="mt-2 text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl md:text-3xl md:leading-tight">
+            Personalized Japanese practice powered by AI, audio, and review.
+          </h1>
+          <p className="mt-2 text-[0.8rem] leading-5 text-white/95 sm:text-sm sm:leading-6 md:text-base">
+            Choose a learning path from the wheel below and jump straight into focused practice.
+          </p>
+        </div>
 
-        <nav aria-label="Learning sections" className="mt-10 w-full max-w-[35rem]">
+        <nav
+          aria-label="Learning sections"
+          className="mt-5 w-full max-w-[min(32rem,max(15rem,calc(100svh_-_21rem)))] md:mt-6 md:max-w-[min(32rem,max(17rem,calc(100svh_-_20rem)))]"
+        >
           <svg
             className="h-auto w-full overflow-visible drop-shadow-2xl"
             role="img"
@@ -129,7 +137,10 @@ export default function Home() {
                     x={labelPoint.x - 48}
                     y={labelPoint.y - 37}
                   >
-                    <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-white">
+                    <div
+                      className="flex h-full flex-col items-center justify-center gap-1 text-center text-white"
+                      style={{ textShadow: "0 1px 6px rgba(16, 24, 40, 0.55)" }}
+                    >
                       <span className="grid h-9 w-9 place-items-center rounded-full bg-white/20 shadow-sm backdrop-blur">
                         {Icon ? (
                           <Icon className="h-5 w-5" />
@@ -139,7 +150,7 @@ export default function Home() {
                           </span>
                         )}
                       </span>
-                      <span className="text-[13px] font-bold leading-tight drop-shadow">
+                      <span className="text-[13px] font-bold leading-tight">
                         {feature.title}
                       </span>
                     </div>

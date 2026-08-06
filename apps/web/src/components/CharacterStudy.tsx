@@ -45,13 +45,13 @@ export function KanaChart({ groups }: { groups: CharacterGroup[] }) {
 
 export function KanjiGrid({ items }: { items: KanjiItem[] }) {
   return (
-    <Panel eyebrow="Starter set" title="Kanji, Readings, and Examples">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <Panel eyebrow="Top 100" title="Kanji, Readings, and Examples">
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
-          <article className="rounded-3xl bg-washi p-5" key={item.character}>
+          <article className="rounded-3xl bg-washi p-4 sm:p-5" key={item.character}>
             <div className="flex items-start gap-4">
-              <p className="text-5xl font-semibold text-ink">{item.character}</p>
-              <div>
+              <p className="text-4xl font-semibold text-ink sm:text-5xl">{item.character}</p>
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold text-ink">{item.meaning}</h3>
                 <p className="mt-1 text-sm text-slate-600">On: {item.onyomi}</p>
                 <p className="text-sm text-slate-600">Kun: {item.kunyomi}</p>

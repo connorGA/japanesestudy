@@ -2,7 +2,7 @@ import asyncio
 
 from app.config import get_settings
 from app.services.audio import AudioService
-from app.services.kana import HIRAGANA
+from app.services.kanji import COMMON_KANJI
 
 
 async def main() -> None:
@@ -14,12 +14,11 @@ async def main() -> None:
             "Set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID before generating audio."
         )
 
-    for item in HIRAGANA:
-        audio_text = item.audio_text or item.character
-        asset = await service.get_or_generate(audio_text)
+    for card in COMMON_KANJI:
+        asset = await service.get_or_generate(card.example_reading)
         detail = asset.public_url or asset.error_message or ""
         print(
-            f"{item.character}\t{item.reading}\t{audio_text}\t"
+            f"{card.id}\texample\t{card.example}\t{card.example_reading}\t"
             f"{asset.status}\t{detail}"
         )
 

@@ -1,6 +1,8 @@
 # Japanese Study
 
-AI-assisted Japanese study app with tutor chat, structured grammar explanations, cached pronunciation audio, spaced repetition, listening practice, and scenario roleplay.
+AI-assisted Japanese study app with a realtime bilingual voice tutor, vocabulary and
+character flashcards, cached pronunciation audio, passive listening, conversation scenarios,
+and roleplay practice.
 
 ## Stack
 
@@ -26,4 +28,4 @@ AI-assisted Japanese study app with tutor chat, structured grammar explanations,
    npm run dev
    ```
 
-The web app runs on `http://localhost:3000` and the API runs on `http://localhost:8000`.
+The web app runs on `http://localhost:3005` and the API runs on `http://localhost:8005`.

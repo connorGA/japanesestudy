@@ -12,7 +12,7 @@ export function Panel({ title, eyebrow, children, className }: PanelProps) {
   return (
     <section
       className={twMerge(
-        "rounded-3xl border border-black/10 bg-white/80 p-6 shadow-sm backdrop-blur",
+        "rounded-3xl border border-black/10 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-6",
         className,
       )}
     >

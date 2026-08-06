@@ -2,7 +2,7 @@ import asyncio
 
 from app.config import get_settings
 from app.services.audio import AudioService
-from app.services.kana import KATAKANA_PRONUNCIATIONS
+from app.services.kana import KATAKANA
 
 
 async def main() -> None:
@@ -14,10 +14,14 @@ async def main() -> None:
             "Set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID before generating audio."
         )
 
-    for character, reading in KATAKANA_PRONUNCIATIONS:
-        asset = await service.get_or_generate(character)
+    for item in KATAKANA:
+        audio_text = item.audio_text or item.character
+        asset = await service.get_or_generate(audio_text)
         detail = asset.public_url or asset.error_message or ""
-        print(f"{character}\t{reading}\t{asset.status}\t{detail}")
+        print(
+            f"{item.character}\t{item.reading}\t{audio_text}\t"
+            f"{asset.status}\t{detail}"
+        )
 
 
 if __name__ == "__main__":

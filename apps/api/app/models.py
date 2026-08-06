@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 ReviewType = Literal["vocabulary", "grammar", "sentence", "listening"]
 ReviewRating = Literal["again", "hard", "good", "easy"]
 AudioStatus = Literal["pending", "ready", "failed"]
+FlashcardSection = Literal["vocabulary", "hiragana", "katakana", "kanji"]
 
 
 class Correction(BaseModel):
@@ -41,6 +42,10 @@ class TutorRequest(BaseModel):
     level: str = "N5-N4"
 
 
+class RealtimeTutorSessionRequest(BaseModel):
+    client_id: str = Field(min_length=8, max_length=128)
+
+
 class TutorPayload(BaseModel):
     reply_japanese: str
     reply_english: str
@@ -60,10 +65,14 @@ class AudioAsset(BaseModel):
 
 class Flashcard(BaseModel):
     id: str
+    section: FlashcardSection = "vocabulary"
     english: str
     kana: str
     romaji: str
     kind: str
+    onyomi: Optional[str] = None
+    kunyomi: Optional[str] = None
+    example_reading: Optional[str] = None
     example_kana: Optional[str] = None
     example_romaji: Optional[str] = None
     example_english: Optional[str] = None

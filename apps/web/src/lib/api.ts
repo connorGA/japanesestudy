@@ -1,6 +1,7 @@
 import type {
   AudioAsset,
   Flashcard,
+  FlashcardSection,
   ListeningScenario,
   PassiveListeningCategory,
   ReviewCandidate,
@@ -10,7 +11,7 @@ import type {
   TutorResponse,
 } from "@/types/study";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8005";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
@@ -44,6 +45,20 @@ export function sendTutorMessage(input: {
   });
 }
 
+export type RealtimeTutorToken = {
+  value: string;
+  expires_at?: number;
+};
+
+export function createRealtimeTutorSession(
+  clientId: string,
+): Promise<RealtimeTutorToken> {
+  return request<RealtimeTutorToken>("/api/tutor/realtime/session", {
+    method: "POST",
+    body: JSON.stringify({ client_id: clientId }),
+  });
+}
+
 export function createReviewItems(
   candidates: ReviewCandidate[],
 ): Promise<ReviewItem[]> {
@@ -57,8 +72,8 @@ export function getDueReviews(): Promise<ReviewItem[]> {
   return request<ReviewItem[]>("/api/reviews/due");
 }
 
-export function getFlashcards(): Promise<Flashcard[]> {
-  return request<Flashcard[]>("/api/flashcards");
+export function getFlashcards(section: FlashcardSection = "vocabulary"): Promise<Flashcard[]> {
+  return request<Flashcard[]>(`/api/flashcards?section=${encodeURIComponent(section)}`);
 }
 
 export function getListeningScenarios(): Promise<ListeningScenario[]> {

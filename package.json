@@ -11,6 +11,7 @@
     "generate:hiragana-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_hiragana_audio.py",
     "generate:katakana-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_katakana_audio.py",
     "generate:flashcard-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_flashcard_audio.py",
+    "generate:kanji-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_kanji_audio.py",
     "generate:listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_listening_audio.py",
     "generate:passive-listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_passive_listening_audio.py",
     "lint": "npm --workspace apps/web run lint",

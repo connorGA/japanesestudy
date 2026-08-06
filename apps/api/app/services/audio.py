@@ -54,22 +54,13 @@ class AudioService:
         if existing:
             return existing
 
-        asset = AudioAsset(id=str(uuid4()), text=normalized, status="pending")
-        self._assets[cache_key] = asset
-        self._insert_pending(asset, cache_key, selected_voice_id)
-
-        if (
-            background_tasks
-            and self._settings.elevenlabs_api_key
-            and selected_voice_id
-        ):
-            background_tasks.add_task(self._generate_and_store, asset, cache_key, selected_voice_id)
-        elif not self._settings.elevenlabs_api_key or not selected_voice_id:
-            asset.status = "failed"
-            self._assets[cache_key] = asset
-            self._mark_failed(asset.id)
-
-        return asset
+        return self._create_and_queue(
+            normalized,
+            cache_key,
+            background_tasks,
+            selected_voice_id,
+            self._settings.elevenlabs_language_code,
+        )
 
     def get_many_or_queue(
         self,
@@ -119,7 +110,13 @@ class AudioService:
                 assets[text] = existing
                 continue
 
-            assets[text] = self.get_or_queue(text, background_tasks)
+            assets[text] = self._create_and_queue(
+                text,
+                cache_key,
+                background_tasks,
+                self._settings.elevenlabs_voice_id,
+                self._settings.elevenlabs_language_code,
+            )
 
         return assets
 
@@ -174,7 +171,14 @@ class AudioService:
                 continue
 
             text, voice_id = item
-            assets[item] = self.get_or_queue(text, background_tasks, voice_id=voice_id)
+            selected_voice_id = voice_id or self._settings.elevenlabs_voice_id
+            assets[item] = self._create_and_queue(
+                text,
+                cache_key,
+                background_tasks,
+                selected_voice_id,
+                self._settings.elevenlabs_language_code,
+            )
 
         return assets
 
@@ -199,24 +203,13 @@ class AudioService:
         if existing:
             return existing
 
-        asset = AudioAsset(id=str(uuid4()), text=normalized, status="pending")
-        self._assets[cache_key] = asset
-        self._insert_pending(asset, cache_key, selected_voice_id)
-
-        if background_tasks and self._settings.elevenlabs_api_key and selected_voice_id:
-            background_tasks.add_task(
-                self._generate_and_store,
-                asset,
-                cache_key,
-                selected_voice_id,
-                selected_language_code,
-            )
-        elif not self._settings.elevenlabs_api_key or not selected_voice_id:
-            asset.status = "failed"
-            self._assets[cache_key] = asset
-            self._mark_failed(asset.id)
-
-        return asset
+        return self._create_and_queue(
+            normalized,
+            cache_key,
+            background_tasks,
+            selected_voice_id,
+            selected_language_code,
+        )
 
     def get_many_or_queue_for_configs(
         self,
@@ -273,11 +266,13 @@ class AudioService:
                 continue
 
             text, voice_id, language_code = item
-            assets[item] = self.get_or_queue_config(
+            selected_voice_id = voice_id or self._settings.elevenlabs_voice_id
+            assets[item] = self._create_and_queue(
                 text,
+                cache_key,
                 background_tasks,
-                voice_id=voice_id,
-                language_code=language_code,
+                selected_voice_id,
+                language_code,
             )
 
         return assets
@@ -314,6 +309,7 @@ class AudioService:
         text: str,
         voice_id: Optional[str] = None,
         language_code: Optional[str] = None,
+        force: bool = False,
     ) -> AudioAsset:
         normalized = normalize_audio_text(text)
         selected_voice_id = voice_id or self._settings.elevenlabs_voice_id
@@ -326,7 +322,7 @@ class AudioService:
         )
 
         existing = self._find_asset(cache_key)
-        if existing and existing.status == "ready" and existing.public_url:
+        if not force and existing and existing.status == "ready" and existing.public_url:
             return existing
 
         if not self._settings.elevenlabs_api_key or not selected_voice_id:
@@ -335,9 +331,15 @@ class AudioService:
             return failed
 
         asset = existing or AudioAsset(id=str(uuid4()), text=normalized, status="pending")
+        asset = asset.model_copy(update={"status": "pending", "error_message": None})
         self._assets[cache_key] = asset
         if not existing:
             self._insert_pending(asset, cache_key, selected_voice_id)
+        elif force:
+            if self._client:
+                self._client.table("audio_assets").update(
+                    {"status": "pending", "error_message": None}
+                ).eq("id", asset.id).execute()
 
         await self._generate_and_store(
             asset,
@@ -359,6 +361,33 @@ class AudioService:
             if response and response.data:
                 return AudioAsset.model_validate(response.data)
         return self._assets.get(cache_key)
+
+    def _create_and_queue(
+        self,
+        text: str,
+        cache_key: str,
+        background_tasks: Optional[BackgroundTasks],
+        voice_id: Optional[str],
+        language_code: str,
+    ) -> AudioAsset:
+        asset = AudioAsset(id=str(uuid4()), text=text, status="pending")
+        self._assets[cache_key] = asset
+        self._insert_pending(asset, cache_key, voice_id)
+
+        if background_tasks and self._settings.elevenlabs_api_key and voice_id:
+            background_tasks.add_task(
+                self._generate_and_store,
+                asset,
+                cache_key,
+                voice_id,
+                language_code,
+            )
+        elif not self._settings.elevenlabs_api_key or not voice_id:
+            asset.status = "failed"
+            self._assets[cache_key] = asset
+            self._mark_failed(asset.id)
+
+        return asset
 
     def _insert_pending(
         self,
@@ -391,7 +420,9 @@ class AudioService:
         try:
             audio_bytes = await self._generate_audio_bytes(asset.text, voice_id, language_code)
             public_url = self._store_audio(asset.id, audio_bytes)
-            ready_asset = asset.model_copy(update={"status": "ready", "public_url": public_url})
+            ready_asset = asset.model_copy(
+                update={"status": "ready", "public_url": public_url, "error_message": None}
+            )
             self._assets[cache_key] = ready_asset
             self._mark_ready(ready_asset)
         except Exception as err:
@@ -444,7 +475,7 @@ class AudioService:
         if not self._client:
             return
         self._client.table("audio_assets").update(
-            {"status": "ready", "public_url": asset.public_url}
+            {"status": "ready", "public_url": asset.public_url, "error_message": None}
         ).eq("id", asset.id).execute()
 
     def _mark_failed(self, asset_id: str, error_message: Optional[str] = None) -> None:
