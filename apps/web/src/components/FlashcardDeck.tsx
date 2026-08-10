@@ -267,7 +267,7 @@ function FlipCard({
 
   return (
     <div
-      className="group h-[26rem] w-full max-w-xl [perspective:1200px] sm:h-[30rem]"
+      className="flashcard-scene group h-[26rem] w-full max-w-xl sm:h-[30rem]"
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -277,15 +277,12 @@ function FlipCard({
       role="button"
       tabIndex={0}
     >
-      <div
-        className={`relative h-full w-full rounded-[2rem] transition duration-500 [transform-style:preserve-3d] ${
-          flipped ? "[transform:rotateY(180deg)]" : ""
-        }`}
-      >
+      <div className={twMerge("flashcard-inner rounded-[2rem]", flipped && "is-flipped")}>
         <div
-          className={`absolute inset-0 overflow-hidden rounded-[2rem] border border-black/10 bg-washi p-5 text-left shadow-xl [backface-visibility:hidden] sm:p-8 ${
-            flipped ? "pointer-events-none" : "pointer-events-auto cursor-pointer"
-          }`}
+          className={twMerge(
+            "flashcard-face absolute inset-0 overflow-hidden rounded-[2rem] border border-black/10 bg-washi p-5 text-left shadow-xl sm:p-8",
+            flipped ? "pointer-events-none" : "pointer-events-auto cursor-pointer",
+          )}
           onClick={onFlip}
         >
           <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-sakura/45 blur-2xl" />
@@ -320,18 +317,21 @@ function FlipCard({
         </div>
 
         <div
-          className={`absolute inset-0 flex flex-col overflow-y-auto rounded-[2rem] border border-black/10 bg-washi p-5 text-left shadow-xl [backface-visibility:hidden] [transform:rotateY(180deg)] sm:p-8 ${
-            flipped ? "pointer-events-auto cursor-pointer" : "pointer-events-none"
-          }`}
+          className={twMerge(
+            "flashcard-face flashcard-face-back absolute inset-0 overflow-hidden rounded-[2rem] border border-black/10 bg-washi shadow-xl",
+            flipped ? "pointer-events-auto cursor-pointer" : "pointer-events-none",
+          )}
           onClick={onFlip}
         >
-          {card.section === "vocabulary" ? (
-            <VocabularyAnswer card={card} />
-          ) : card.section === "kanji" ? (
-            <KanjiAnswer card={card} />
-          ) : (
-            <KanaAnswer card={card} />
-          )}
+          <div className="absolute inset-0 overflow-y-auto p-5 sm:p-8">
+            {card.section === "vocabulary" ? (
+              <VocabularyAnswer card={card} />
+            ) : card.section === "kanji" ? (
+              <KanjiAnswer card={card} />
+            ) : (
+              <KanaAnswer card={card} />
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -20,6 +20,7 @@ type TranscriptEntry = {
   id: string;
   role: "user" | "assistant";
   text: string;
+  turn: number;
 };
 
 const CLIENT_ID_KEY = "japanese-study.realtime-client-id";
@@ -55,6 +56,9 @@ export function RealtimeTutor() {
   const assistantDraftIdRef = useRef<string | null>(null);
   const speechStartRef = useRef<{ audioMs?: number; wallMs: number } | null>(null);
   const transcriptIdsRef = useRef(new Set<string>());
+  const turnRef = useRef(0);
+  const activeTurnRef = useRef(0);
+  const assistantTurnRef = useRef(0);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const connected = ["connected", "listening", "speaking"].includes(sessionState);
   const sessionCost = realtimeCost + transcriptionCost;
@@ -74,6 +78,9 @@ export function RealtimeTutor() {
     setTranscriptionCost(0);
     setTranscript([]);
     transcriptIdsRef.current.clear();
+    turnRef.current = 0;
+    activeTurnRef.current = 0;
+    assistantTurnRef.current = 0;
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -170,6 +177,7 @@ export function RealtimeTutor() {
         audioMs: numberOrUndefined(event.audio_start_ms),
         wallMs: performance.now(),
       };
+      beginTurn();
       setSessionState("listening");
       return;
     }
@@ -189,6 +197,7 @@ export function RealtimeTutor() {
       return;
     }
     if (type === "response.created") {
+      assistantTurnRef.current = activeTurnRef.current || beginTurn();
       setSessionState("speaking");
       return;
     }
@@ -198,10 +207,10 @@ export function RealtimeTutor() {
       return;
     }
     if (type === "conversation.item.input_audio_transcription.completed") {
-      appendTranscript(
+      upsertUserTranscript(
         String(event.item_id ?? crypto.randomUUID()),
-        "user",
         String(event.transcript ?? ""),
+        activeTurnRef.current || beginTurn(),
       );
       return;
     }
@@ -236,27 +245,64 @@ export function RealtimeTutor() {
     }
   }
 
-  function appendTranscript(id: string, role: TranscriptEntry["role"], text: string) {
+  function beginTurn() {
+    turnRef.current += 1;
+    activeTurnRef.current = turnRef.current;
+    return activeTurnRef.current;
+  }
+
+  function appendTranscript(
+    id: string,
+    role: TranscriptEntry["role"],
+    text: string,
+    turn = activeTurnRef.current || beginTurn(),
+  ) {
     const normalized = text.trim();
     if (!normalized || transcriptIdsRef.current.has(id)) return;
     transcriptIdsRef.current.add(id);
-    setTranscript((items) => [...items, { id, role, text: normalized }]);
+    setTranscript((items) => [...items, { id, role, text: normalized, turn }]);
   }
 
-  function upsertAssistantTranscript(id: string, text: string) {
-    const normalized = text.trimStart();
+  function upsertUserTranscript(id: string, text: string, turn: number) {
+    const normalized = text.trim();
     if (!normalized) return;
 
     transcriptIdsRef.current.add(id);
     setTranscript((items) => {
       const index = items.findIndex((item) => item.id === id);
       if (index === -1) {
-        return [...items, { id, role: "assistant", text: normalized }];
+        return [...items, { id, role: "user", text: normalized, turn }];
+      }
+
+      return items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, text: normalized, turn } : item,
+      );
+    });
+  }
+
+  function upsertAssistantTranscript(id: string, text: string) {
+    const normalized = text.trimStart();
+    if (!normalized) return;
+
+    const turn = assistantTurnRef.current || activeTurnRef.current || beginTurn();
+    transcriptIdsRef.current.add(id);
+    setTranscript((items) => {
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) {
+        return [...items, { id, role: "assistant", text: normalized, turn }];
       }
 
       return items.map((item, itemIndex) =>
         itemIndex === index ? { ...item, text: normalized } : item,
       );
+    });
+  }
+
+  function sortTranscript(items: TranscriptEntry[]) {
+    return [...items].sort((left, right) => {
+      if (left.turn !== right.turn) return left.turn - right.turn;
+      if (left.role === right.role) return 0;
+      return left.role === "user" ? -1 : 1;
     });
   }
 
@@ -274,7 +320,8 @@ export function RealtimeTutor() {
     if (!normalized || !channel || channel.readyState !== "open") return;
 
     const id = crypto.randomUUID();
-    appendTranscript(id, "user", normalized);
+    const turn = beginTurn();
+    appendTranscript(id, "user", normalized, turn);
     channel.send(
       JSON.stringify({
         type: "conversation.item.create",
@@ -303,7 +350,7 @@ export function RealtimeTutor() {
   function downloadTranscript() {
     if (!transcript.length) return;
 
-    const body = transcript
+    const body = sortTranscript(transcript)
       .map((entry) => `${entry.role === "user" ? "You" : "Tutor"}:\n${entry.text}`)
       .join("\n\n");
     const contents = [
@@ -458,7 +505,7 @@ export function RealtimeTutor() {
           </div>
         ) : null}
 
-        {transcript.map((entry) => (
+        {sortTranscript(transcript).map((entry) => (
           <div
             className={twMerge("flex", entry.role === "user" ? "justify-end" : "justify-start")}
             key={entry.id}

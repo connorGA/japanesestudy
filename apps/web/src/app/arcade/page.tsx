@@ -1,7 +1,15 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, Gamepad2 } from "lucide-react";
+import { ArrowRight, Boxes, Gamepad2, MousePointerClick } from "lucide-react";
 
 const games = [
+  {
+    title: "Hiragana Rush",
+    description:
+      "A timed tap race: spot the romaji, hit the matching hiragana, and chain combos before the clock runs out.",
+    href: "/arcade/hiragana-rush",
+    level: "Speed drill",
+    icon: MousePointerClick,
+  },
   {
     title: "Kana Cube",
     description:
