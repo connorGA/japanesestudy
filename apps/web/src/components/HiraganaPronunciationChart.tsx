@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getHiraganaAudioAssets } from "@/lib/api";
 import { detachAudio, isPlayInterruptedError, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 import type { AudioAsset } from "@/types/study";
 
 type HiraganaCell = {
@@ -174,6 +175,11 @@ export function HiraganaPronunciationChart() {
       audioRef.current = audio;
       audio.onended = () => setPlayback({ activeCharacter: cell.character, status: "idle" });
       const started = await playAudioElement(audio);
+      if (started) {
+        recordStudyActivity("japanese", "pronunciation_play", "hiragana", {
+          character: cell.character,
+        });
+      }
       if (started) {
         setPlayback({ activeCharacter: cell.character, status: "playing" });
       }

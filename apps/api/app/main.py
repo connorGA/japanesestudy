@@ -1,5 +1,6 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from uuid import UUID
 
 from app.config import get_settings
 from app.models import (
@@ -11,6 +12,10 @@ from app.models import (
     ListeningScenario,
     PassiveListeningCategory,
     PassiveListeningItem,
+    ProgressEventCreate,
+    ProgressEventResult,
+    ProgressImportRequest,
+    ProgressSummary,
     RealtimeTutorSessionRequest,
     ReviewCreateRequest,
     ReviewGradeRequest,
@@ -32,6 +37,7 @@ from app.services.kana import (
 from app.services.kanji import COMMON_KANJI
 from app.services.listening import LISTENING_SCENARIOS
 from app.services.passive_listening import PASSIVE_LISTENING_CATEGORIES
+from app.services.progress import DAILY_LANGUAGE_POINT_LIMIT, POINT_RULES
 from app.services.realtime_tutor import RealtimeTutorService
 from app.services.repository import StudyRepository
 from app.services.roleplay import SCENARIOS, RoleplayService
@@ -84,6 +90,8 @@ async def create_realtime_tutor_session(
     request: RealtimeTutorSessionRequest,
 ) -> dict:
     try:
+        if request.language == "italian":
+            return await realtime_tutor.create_client_secret(request.client_id, "italian")
         return await realtime_tutor.create_client_secret(request.client_id)
     except RuntimeError as err:
         raise HTTPException(status_code=502, detail=str(err)) from err
@@ -226,6 +234,27 @@ def passive_listening_categories(
             (item.japanese, japanese_voice_id, "ja"),
         )
     ]
+
+
+@app.get("/api/progress/{learner_id}")
+def progress_summary(learner_id: UUID) -> ProgressSummary:
+    return repo.progress_summary(learner_id)
+
+
+@app.post("/api/progress/events")
+def record_progress_event(request: ProgressEventCreate) -> ProgressEventResult:
+    rule = POINT_RULES[request.activity_type]
+    return repo.record_progress_event(
+        request,
+        points=rule.points,
+        activity_daily_limit=rule.daily_limit,
+        language_daily_limit=DAILY_LANGUAGE_POINT_LIMIT,
+    )
+
+
+@app.post("/api/progress/import")
+def import_progress(request: ProgressImportRequest) -> dict[str, int]:
+    return {"imported": repo.import_progress(request.learner_id, request.records)}
     audio_assets = audio.get_many_or_queue_for_configs(audio_items, background_tasks)
 
     return [

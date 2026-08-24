@@ -1,11 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { ProgressTracker } from "@/components/ProgressTracker";
 import { TopNav } from "@/components/TopNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3005"),
-  title: "Japanese Study",
-  description: "AI Japanese tutor with audio, flashcards, listening, and roleplay.",
+  title: {
+    default: "Language Study",
+    template: "%s | Language Study",
+  },
+  description: "Personalized Japanese and Italian practice with audio, flashcards, games, and AI tutoring.",
   icons: {
     icon: [
       { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -16,8 +20,8 @@ export const metadata: Metadata = {
     shortcut: "/brand/favicon-512.png",
   },
   openGraph: {
-    title: "Japanese Study",
-    description: "AI Japanese tutor with audio, flashcards, listening, and roleplay.",
+    title: "Language Study",
+    description: "Personalized Japanese and Italian practice in one learning dashboard.",
     images: [{ url: "/brand/logo-stacked.png", width: 1024, height: 1024, alt: "Japanese Study" }],
   },
 };
@@ -37,6 +41,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <TopNav />
+        <ProgressTracker />
         {children}
       </body>
     </html>

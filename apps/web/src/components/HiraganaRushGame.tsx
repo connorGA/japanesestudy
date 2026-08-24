@@ -14,6 +14,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import { getHiraganaAudioAssets } from "@/lib/api";
 import { detachAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 import type { AudioAsset } from "@/types/study";
 
 type RowId = "vowel" | "k" | "s" | "t" | "n" | "h" | "m" | "y" | "r" | "w";
@@ -230,6 +231,9 @@ export function HiraganaRushGame() {
       setBestCombo((best) => Math.max(best, nextCombo));
       setFeedbackChar(choice.char);
       setFeedbackKind("correct");
+      recordStudyActivity("japanese", "arcade_correct", "hiragana_rush", {
+        character: target.char,
+      });
       playKana(target.char);
       feedbackTimerRef.current = window.setTimeout(() => nextPrompt(), 220);
       return;

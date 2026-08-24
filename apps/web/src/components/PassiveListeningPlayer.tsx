@@ -23,6 +23,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import { getPassiveListeningCategories } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 import type { AudioAsset, PassiveListeningCategory } from "@/types/study";
 
 const PROGRESS_STORAGE_KEY = "japanese-study.passive-listening-progress";
@@ -128,6 +129,10 @@ export function PassiveListeningPlayer() {
     const steps = buildSequence(item);
     const step = steps[nextStepIndex];
     if (!step) {
+      recordStudyActivity("japanese", "passive_listening_item", "passive_listening", {
+        category_id: activeCategory.id,
+        item_id: item.id,
+      });
       playStep(nextItemIndex + 1, 0);
       return;
     }

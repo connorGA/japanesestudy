@@ -14,6 +14,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import { createRealtimeTutorSession } from "@/lib/api";
 import { isPlayInterruptedError } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 
 type SessionState = "disconnected" | "connecting" | "connected" | "listening" | "speaking";
 type TranscriptEntry = {
@@ -23,12 +24,26 @@ type TranscriptEntry = {
   turn: number;
 };
 
-const CLIENT_ID_KEY = "japanese-study.realtime-client-id";
-const starters = [
-  "Let's roleplay ordering at a restaurant.",
-  "Help me practice a simple self-introduction.",
-  "Ask me beginner questions in Japanese.",
-];
+const tutorConfig = {
+  japanese: {
+    name: "Japanese",
+    clientKey: "japanese-study.realtime-client-id",
+    starters: [
+      "Let's roleplay ordering at a restaurant.",
+      "Help me practice a simple self-introduction.",
+      "Ask me beginner questions in Japanese.",
+    ],
+  },
+  italian: {
+    name: "Italian",
+    clientKey: "italian-study.realtime-client-id",
+    starters: [
+      "Let's roleplay ordering at an Italian café.",
+      "Help me practice a simple self-introduction.",
+      "Ask me beginner questions in Italian.",
+    ],
+  },
+} as const;
 
 const REALTIME_PRICING_PER_MILLION = {
   audioInput: 32,
@@ -40,7 +55,8 @@ const REALTIME_PRICING_PER_MILLION = {
 };
 const TRANSCRIPTION_COST_PER_MINUTE = 0.003;
 
-export function RealtimeTutor() {
+export function RealtimeTutor({ language = "japanese" }: { language?: keyof typeof tutorConfig }) {
+  const config = tutorConfig[language];
   const [sessionState, setSessionState] = useState<SessionState>("disconnected");
   const [muted, setMuted] = useState(false);
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
@@ -96,7 +112,7 @@ export function RealtimeTutor() {
       });
       streamRef.current = stream;
 
-      const token = await createRealtimeTutorSession(getClientId());
+      const token = await createRealtimeTutorSession(getClientId(config.clientKey), language);
       if (!token.value) {
         throw new Error("The tutor session did not return a connection token.");
       }
@@ -207,11 +223,16 @@ export function RealtimeTutor() {
       return;
     }
     if (type === "conversation.item.input_audio_transcription.completed") {
+      const itemId = String(event.item_id ?? crypto.randomUUID());
       upsertUserTranscript(
-        String(event.item_id ?? crypto.randomUUID()),
+        itemId,
         String(event.transcript ?? ""),
         activeTurnRef.current || beginTurn(),
       );
+      recordStudyActivity(language, "tutor_turn", "realtime_tutor", {
+        input: "voice",
+        item_id: itemId,
+      });
       return;
     }
     if (type === "response.output_audio_transcript.delta") {
@@ -333,6 +354,10 @@ export function RealtimeTutor() {
       }),
     );
     channel.send(JSON.stringify({ type: "response.create" }));
+    recordStudyActivity(language, "tutor_turn", "realtime_tutor", {
+      input: "text",
+      item_id: id,
+    });
     setInput("");
   }
 
@@ -354,7 +379,7 @@ export function RealtimeTutor() {
       .map((entry) => `${entry.role === "user" ? "You" : "Tutor"}:\n${entry.text}`)
       .join("\n\n");
     const contents = [
-      "Japanese Tutor Conversation",
+      `${config.name} Tutor Conversation`,
       new Date().toLocaleString(),
       `Estimated session cost: ${formatSessionCost(sessionCost)}`,
       "—".repeat(32),
@@ -363,7 +388,7 @@ export function RealtimeTutor() {
     const url = URL.createObjectURL(new Blob([contents], { type: "text/plain;charset=utf-8" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = `japanese-tutor-transcript-${new Date()
+    link.download = `${language}-tutor-transcript-${new Date()
       .toISOString()
       .replace(/[:.]/g, "-")}.txt`;
     link.click();
@@ -392,7 +417,7 @@ export function RealtimeTutor() {
       <header className="sticky top-[4.5rem] z-10 flex min-h-[4.5rem] flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-t-3xl border-b border-black/5 bg-white/95 px-4 py-3 backdrop-blur sm:px-6 lg:top-0">
         <div>
           <h2 className="font-bold text-ink">Conversation</h2>
-          <p className="mt-0.5 text-xs text-slate-500">English and Japanese transcript</p>
+          <p className="mt-0.5 text-xs text-slate-500">English and {config.name} transcript</p>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-2">
@@ -484,12 +509,12 @@ export function RealtimeTutor() {
                 {connected ? "Start speaking whenever you are ready." : "A conversation starts with your voice."}
               </p>
               <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-slate-500">
-                Ask a question in English or Japanese, or describe the situation you want to
+                Ask a question in English or {config.name}, or describe the situation you want to
                 practice.
               </p>
               {connected ? (
                 <div className="mx-auto mt-5 flex max-w-3xl flex-wrap justify-center gap-2">
-                  {starters.map((starter) => (
+                  {config.starters.map((starter) => (
                     <button
                       className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs text-slate-600 transition hover:border-matcha hover:text-ink"
                       key={starter}
@@ -558,7 +583,7 @@ export function RealtimeTutor() {
             </span>
             <h3 className="mt-4 text-xl font-bold text-ink">Start a conversation</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Connect your microphone, then speak naturally in English or Japanese.
+              Connect your microphone, then speak naturally in English or {config.name}.
             </p>
             {error ? <p className="mt-3 text-sm leading-5 text-red-700">{error}</p> : null}
             <button
@@ -692,11 +717,11 @@ function formatSessionCost(cost: number) {
   return `$${cost.toFixed(2)}`;
 }
 
-function getClientId() {
-  const stored = window.localStorage.getItem(CLIENT_ID_KEY);
+function getClientId(key: string) {
+  const stored = window.localStorage.getItem(key);
   if (stored) return stored;
   const value = crypto.randomUUID();
-  window.localStorage.setItem(CLIENT_ID_KEY, value);
+  window.localStorage.setItem(key, value);
   return value;
 }
 

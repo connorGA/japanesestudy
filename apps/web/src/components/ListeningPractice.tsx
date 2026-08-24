@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { getListeningScenarios } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 import type { ListeningScenario } from "@/types/study";
 
 export function ListeningPractice() {
@@ -67,7 +68,13 @@ export function ListeningPractice() {
     setActiveLineIndex(index);
     setIsPlaying(true);
     setStatus("");
-    audio.onended = () => playLine(index + 1);
+    audio.onended = () => {
+      recordStudyActivity("japanese", "listening_line_complete", "listening", {
+        scenario_id: activeScenario.id,
+        line_index: index,
+      });
+      playLine(index + 1);
+    };
     audio.onerror = () => {
       setStatus("Could not play this line's audio.");
       stopPlayback();

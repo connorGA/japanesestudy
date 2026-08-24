@@ -17,6 +17,7 @@ import {
 import { twMerge } from "tailwind-merge";
 import { getHiraganaAudioAssets } from "@/lib/api";
 import { detachAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { recordStudyActivity } from "@/lib/progress";
 import type { AudioAsset } from "@/types/study";
 
 type RowId = "vowel" | "k" | "s" | "t" | "n" | "h" | "m" | "y" | "r" | "w";
@@ -269,6 +270,9 @@ export function KanaCubeGame() {
       const isLast = roundNumber >= ROUNDS_PER_RUN || (!correct && lives <= 1);
 
       if (correct) {
+        recordStudyActivity("japanese", "arcade_correct", "kana_cube", {
+          character: round.target.char,
+        });
         setScore((value) => value + gained);
         setCorrectCount((value) => value + 1);
         setCombo((value) => {

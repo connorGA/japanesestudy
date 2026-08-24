@@ -13,6 +13,34 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8005";
 
+export type StudyLanguage = "japanese" | "italian";
+export type StudyActivity =
+  | "flashcard_retry"
+  | "flashcard_mastered"
+  | "pronunciation_play"
+  | "verb_form_practice"
+  | "listening_line_complete"
+  | "passive_listening_item"
+  | "arcade_correct"
+  | "srs_review"
+  | "tutor_turn"
+  | "roleplay_turn";
+
+export type ProgressEventInput = {
+  id: string;
+  learner_id: string;
+  language: StudyLanguage;
+  feature: string;
+  activity_type: StudyActivity;
+  activity_date: string;
+  metadata?: Record<string, unknown>;
+};
+
+export type ProgressSummary = {
+  learner_id: string;
+  records: Array<{ language: StudyLanguage; date: string; points: number }>;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
@@ -52,10 +80,11 @@ export type RealtimeTutorToken = {
 
 export function createRealtimeTutorSession(
   clientId: string,
+  language: "japanese" | "italian" = "japanese",
 ): Promise<RealtimeTutorToken> {
   return request<RealtimeTutorToken>("/api/tutor/realtime/session", {
     method: "POST",
-    body: JSON.stringify({ client_id: clientId }),
+    body: JSON.stringify({ client_id: clientId, language }),
   });
 }
 
@@ -125,5 +154,33 @@ export function sendRoleplayTurn(input: {
       user_text: input.userText,
       level: input.level ?? "N5-N4",
     }),
+  });
+}
+
+export function getStudyProgress(learnerId: string): Promise<ProgressSummary> {
+  return request<ProgressSummary>(`/api/progress/${encodeURIComponent(learnerId)}`);
+}
+
+export function recordProgressEvent(input: ProgressEventInput): Promise<{
+  id: string;
+  language: StudyLanguage;
+  activity_type: StudyActivity;
+  points_awarded: number;
+  daily_points: number;
+  duplicate: boolean;
+}> {
+  return request("/api/progress/events", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function importStudyProgress(
+  learnerId: string,
+  records: Array<{ language: StudyLanguage; date: string; points: number }>,
+): Promise<{ imported: number }> {
+  return request("/api/progress/import", {
+    method: "POST",
+    body: JSON.stringify({ learner_id: learnerId, records }),
   });
 }

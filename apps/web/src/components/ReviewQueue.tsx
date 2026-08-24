@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getDueReviews, gradeReview } from "@/lib/api";
+import { recordStudyActivity } from "@/lib/progress";
 import type { ReviewItem } from "@/types/study";
 import { Panel } from "./Panel";
 
@@ -26,6 +27,10 @@ export function ReviewQueue() {
   async function submitRating(rating: (typeof ratings)[number]) {
     if (!active) return;
     const updated = await gradeReview({ reviewItemId: active.id, rating });
+    recordStudyActivity("japanese", "srs_review", "review_queue", {
+      review_item_id: active.id,
+      rating,
+    });
     setItems((current) =>
       current.map((item) => (item.id === updated.id ? updated : item)),
     );

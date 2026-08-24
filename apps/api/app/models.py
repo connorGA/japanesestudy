@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal, Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,20 @@ ReviewType = Literal["vocabulary", "grammar", "sentence", "listening"]
 ReviewRating = Literal["again", "hard", "good", "easy"]
 AudioStatus = Literal["pending", "ready", "failed"]
 FlashcardSection = Literal["vocabulary", "hiragana", "katakana", "kanji"]
+TutorLanguage = Literal["japanese", "italian"]
+StudyLanguage = Literal["japanese", "italian"]
+StudyActivityType = Literal[
+    "flashcard_retry",
+    "flashcard_mastered",
+    "pronunciation_play",
+    "verb_form_practice",
+    "listening_line_complete",
+    "passive_listening_item",
+    "arcade_correct",
+    "srs_review",
+    "tutor_turn",
+    "roleplay_turn",
+]
 
 
 class Correction(BaseModel):
@@ -44,6 +59,7 @@ class TutorRequest(BaseModel):
 
 class RealtimeTutorSessionRequest(BaseModel):
     client_id: str = Field(min_length=8, max_length=128)
+    language: TutorLanguage = "japanese"
 
 
 class TutorPayload(BaseModel):
@@ -164,3 +180,44 @@ class RoleplayTurn(BaseModel):
     feedback: str
     suggested_reply: str
     audio_asset: Optional[AudioAsset] = None
+
+
+class ProgressEventCreate(BaseModel):
+    id: UUID
+    learner_id: UUID
+    language: StudyLanguage
+    feature: str = Field(min_length=1, max_length=80)
+    activity_type: StudyActivityType
+    activity_date: date
+    metadata: dict = Field(default_factory=dict)
+
+
+class ProgressEventResult(BaseModel):
+    id: UUID
+    language: StudyLanguage
+    activity_type: StudyActivityType
+    points_awarded: int
+    daily_points: int
+    duplicate: bool = False
+
+
+class DailyProgress(BaseModel):
+    language: StudyLanguage
+    date: date
+    points: int
+
+
+class ProgressSummary(BaseModel):
+    learner_id: UUID
+    records: list[DailyProgress] = Field(default_factory=list)
+
+
+class ProgressImportItem(BaseModel):
+    language: StudyLanguage
+    date: date
+    points: int = Field(ge=0, le=250)
+
+
+class ProgressImportRequest(BaseModel):
+    learner_id: UUID
+    records: list[ProgressImportItem] = Field(default_factory=list, max_length=800)

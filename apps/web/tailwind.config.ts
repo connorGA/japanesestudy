@@ -5,10 +5,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#101828",
-        sakura: "#f9d6df",
-        matcha: "#7a9b76",
-        washi: "#fffaf0",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        sakura: "rgb(var(--color-sakura) / <alpha-value>)",
+        matcha: "rgb(var(--color-matcha) / <alpha-value>)",
+        washi: "rgb(var(--color-washi) / <alpha-value>)",
       },
     },
   },

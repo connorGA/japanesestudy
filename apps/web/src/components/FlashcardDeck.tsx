@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Check, Search, Volume2, X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { recordStudyActivity } from "@/lib/progress";
 import { getFlashcards } from "@/lib/api";
 import {
   isPlayInterruptedError,
@@ -115,6 +116,12 @@ export function FlashcardDeck() {
     window.localStorage.setItem(
       `${SCORE_STORAGE_KEY}.${section}`,
       JSON.stringify(nextScores),
+    );
+    recordStudyActivity(
+      "japanese",
+      delta > 0 ? "flashcard_mastered" : "flashcard_retry",
+      "flashcards",
+      { card_id: cardId, deck: section },
     );
     showNextStudyCard(nextScores);
   }

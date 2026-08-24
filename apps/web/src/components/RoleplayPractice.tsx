@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getScenarios, sendRoleplayTurn } from "@/lib/api";
+import { recordStudyActivity } from "@/lib/progress";
 import type { RoleplayTurn, Scenario } from "@/types/study";
 import { AudioPlayer } from "./AudioPlayer";
 import { Panel } from "./Panel";
@@ -40,6 +41,9 @@ export function RoleplayPractice() {
     setStatus("Continuing roleplay...");
     try {
       setTurn(await sendRoleplayTurn({ scenarioId, userText: roleplayText }));
+      recordStudyActivity("japanese", "roleplay_turn", "roleplay", {
+        scenario_id: scenarioId,
+      });
       setStatus(null);
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Roleplay failed");
