@@ -78,8 +78,6 @@ export function LanguageDashboard() {
 
   return (
     <main className="theme-dashboard relative min-h-[calc(100svh-5rem)] px-4 pb-14 sm:px-6 lg:px-10 lg:pb-20">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[44rem] bg-[radial-gradient(circle_at_76%_30%,rgba(133,151,204,0.16),transparent_32rem)]" />
-
       <div className="relative mx-auto max-w-7xl">
         <section className="relative grid min-h-[31rem] items-center py-10 sm:min-h-[34rem] sm:py-14 lg:min-h-[38rem] lg:grid-cols-[1.05fr_0.95fr] lg:py-16">
           <div className="pointer-events-none absolute right-0 top-8 aspect-square w-full max-w-[31rem] opacity-30 sm:top-4 sm:max-w-[35rem] sm:opacity-55 lg:top-0 lg:max-w-[38rem] lg:opacity-95">
@@ -287,10 +285,16 @@ function CountryFlag({ country, className }: { country: StudyLanguage; className
 }
 
 function buildHeatmapDays(records: Record<string, number>) {
-  const end = new Date();
+  const firstRecordedDate = Object.keys(records)
+    .filter((key) => (records[key] ?? 0) > 0 && /^\d{4}-\d{2}-\d{2}$/.test(key))
+    .sort()[0];
+  const start = firstRecordedDate
+    ? new Date(`${firstRecordedDate}T00:00:00`)
+    : new Date();
+
   return Array.from({ length: 364 }, (_, index) => {
-    const date = new Date(end);
-    date.setDate(end.getDate() - (363 - index));
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
     const key = localDateKey(date);
     return { key, date, count: records[key] ?? 0 };
   });

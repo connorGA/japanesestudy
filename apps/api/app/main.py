@@ -234,27 +234,6 @@ def passive_listening_categories(
             (item.japanese, japanese_voice_id, "ja"),
         )
     ]
-
-
-@app.get("/api/progress/{learner_id}")
-def progress_summary(learner_id: UUID) -> ProgressSummary:
-    return repo.progress_summary(learner_id)
-
-
-@app.post("/api/progress/events")
-def record_progress_event(request: ProgressEventCreate) -> ProgressEventResult:
-    rule = POINT_RULES[request.activity_type]
-    return repo.record_progress_event(
-        request,
-        points=rule.points,
-        activity_daily_limit=rule.daily_limit,
-        language_daily_limit=DAILY_LANGUAGE_POINT_LIMIT,
-    )
-
-
-@app.post("/api/progress/import")
-def import_progress(request: ProgressImportRequest) -> dict[str, int]:
-    return {"imported": repo.import_progress(request.learner_id, request.records)}
     audio_assets = audio.get_many_or_queue_for_configs(audio_items, background_tasks)
 
     return [
@@ -276,6 +255,27 @@ def import_progress(request: ProgressImportRequest) -> dict[str, int]:
         )
         for category in PASSIVE_LISTENING_CATEGORIES
     ]
+
+
+@app.get("/api/progress/{learner_id}")
+def progress_summary(learner_id: UUID) -> ProgressSummary:
+    return repo.progress_summary(learner_id)
+
+
+@app.post("/api/progress/events")
+def record_progress_event(request: ProgressEventCreate) -> ProgressEventResult:
+    rule = POINT_RULES[request.activity_type]
+    return repo.record_progress_event(
+        request,
+        points=rule.points,
+        activity_daily_limit=rule.daily_limit,
+        language_daily_limit=DAILY_LANGUAGE_POINT_LIMIT,
+    )
+
+
+@app.post("/api/progress/import")
+def import_progress(request: ProgressImportRequest) -> dict[str, int]:
+    return {"imported": repo.import_progress(request.learner_id, request.records)}
 
 
 @app.post("/api/reviews/from-candidates")

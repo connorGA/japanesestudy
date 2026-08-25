@@ -17,12 +17,12 @@ export const metadata: Metadata = {
       { url: "/brand/favicon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/brand/favicon-180.png", sizes: "180x180", type: "image/png" }],
-    shortcut: "/brand/favicon-512.png",
+    shortcut: "/brand/favicon-32.png",
   },
   openGraph: {
     title: "Language Study",
     description: "Personalized Japanese and Italian practice in one learning dashboard.",
-    images: [{ url: "/brand/logo-stacked.png", width: 1024, height: 1024, alt: "Japanese Study" }],
+    images: [{ url: "/brand/favicon-512.png", width: 512, height: 512, alt: "Language Study" }],
   },
 };
 
