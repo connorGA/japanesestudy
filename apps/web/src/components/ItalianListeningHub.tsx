@@ -15,11 +15,14 @@ import {
 } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import {
-  italianCards,
-  type ItalianCard,
-  type ItalianDeck,
-} from "@/data/italian";
+  italianListeningCategories,
+  type ItalianListeningCategoryId,
+  type ItalianListeningItem,
+} from "@/data/italianListening";
+import { getItalianListeningAudio } from "@/lib/api";
+import { detachAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
 import { recordStudyActivity } from "@/lib/progress";
+import type { AudioAsset } from "@/types/study";
 
 type Line = { speaker: string; italian: string; english: string };
 type Scenario = {
@@ -31,41 +34,6 @@ type Scenario = {
   lines: Line[];
 };
 type ListeningMode = "hands-free" | "scenarios";
-type ListeningCategory = {
-  id: ItalianDeck;
-  title: string;
-  description: string;
-  items: ItalianCard[];
-};
-
-const categoryDetails: Array<Omit<ListeningCategory, "items">> = [
-  {
-    id: "vocabulary",
-    title: "Everyday Words",
-    description: "High-frequency words for daily conversations.",
-  },
-  {
-    id: "phrases",
-    title: "Essential Phrases",
-    description: "Useful expressions for natural interactions.",
-  },
-  {
-    id: "verbs",
-    title: "Core Verbs",
-    description: "The actions that power everyday Italian.",
-  },
-  {
-    id: "travel",
-    title: "Travel & Dining",
-    description: "Words for trains, restaurants, and getting around.",
-  },
-];
-
-const listeningCategories: ListeningCategory[] = categoryDetails.map((category) => ({
-  ...category,
-  items: italianCards.filter((card) => card.deck === category.id),
-}));
-
 const scenarios: Scenario[] = [
   {
     id: "cafe",
@@ -134,9 +102,35 @@ const scenarios: Scenario[] = [
   },
 ];
 
+const listeningAudioRequests = [
+  ...italianListeningCategories.flatMap((category) =>
+    category.items.flatMap((item) => [
+      {
+        id: listeningAudioId(category.id, item.id, "en"),
+        text: item.english,
+        language: "en" as const,
+      },
+      {
+        id: listeningAudioId(category.id, item.id, "it"),
+        text: item.italian,
+        language: "it" as const,
+      },
+    ]),
+  ),
+  ...scenarios.flatMap((scenario) =>
+    scenario.lines.map((line, index) => ({
+      id: scenarioAudioId(scenario.id, index),
+      text: line.italian,
+      language: "it" as const,
+    })),
+  ),
+];
+
 export function ItalianListeningHub() {
   const [mode, setMode] = useState<ListeningMode>("hands-free");
-  const [categoryId, setCategoryId] = useState<ItalianDeck>(listeningCategories[0].id);
+  const [categoryId, setCategoryId] = useState<ItalianListeningCategoryId>(
+    italianListeningCategories[0].id,
+  );
   const [scenarioId, setScenarioId] = useState(scenarios[0].id);
   const [itemIndex, setItemIndex] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
@@ -145,26 +139,85 @@ export function ItalianListeningHub() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [status, setStatus] = useState("");
+  const [audioById, setAudioById] = useState<Record<string, AudioAsset>>({});
+  const [isAudioLoading, setIsAudioLoading] = useState(true);
   const playbackTokenRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const advanceTimerRef = useRef<number | null>(null);
+  const manifestTimerRef = useRef<number | null>(null);
 
   const category =
-    listeningCategories.find((item) => item.id === categoryId) ?? listeningCategories[0];
+    italianListeningCategories.find((item) => item.id === categoryId) ??
+    italianListeningCategories[0];
   const activeItem = category.items[itemIndex] ?? category.items[0];
   const scenario = scenarios.find((item) => item.id === scenarioId) ?? scenarios[0];
   const progress = category.items.length
     ? ((itemIndex + 1) / category.items.length) * 100
     : 0;
+  const activeItemHasAudio = activeItem
+    ? ["en", "it"].every((language) => {
+        const asset =
+          audioById[
+            listeningAudioId(category.id, activeItem.id, language as "en" | "it")
+          ];
+        return asset?.status === "ready" && Boolean(asset.public_url);
+      })
+    : false;
 
   useEffect(() => {
+    let active = true;
+
+    async function refreshAudioManifest() {
+      try {
+        const manifest = await getItalianListeningManifest(listeningAudioRequests);
+        if (!active) return;
+
+        const nextAudioById = Object.fromEntries(
+          manifest.map((item) => [item.id, item.audio]),
+        );
+        setAudioById(nextAudioById);
+
+        const hasPendingAudio = manifest.some((item) => item.audio.status === "pending");
+        const failedAudio = manifest.find((item) => item.audio.status === "failed");
+        if (hasPendingAudio) {
+          manifestTimerRef.current = window.setTimeout(refreshAudioManifest, 1800);
+          return;
+        }
+
+        setIsAudioLoading(false);
+        if (failedAudio) {
+          setStatus(
+            failedAudio.audio.error_message ??
+              "Some ElevenLabs recordings could not be prepared.",
+          );
+        }
+      } catch (error) {
+        if (!active) return;
+        setIsAudioLoading(false);
+        setStatus(formatAudioError(error));
+      }
+    }
+
+    void refreshAudioManifest();
+
     return () => {
+      active = false;
       playbackTokenRef.current += 1;
-      window.speechSynthesis.cancel();
+      if (manifestTimerRef.current) window.clearTimeout(manifestTimerRef.current);
+      if (advanceTimerRef.current) window.clearTimeout(advanceTimerRef.current);
+      detachAudio(audioRef.current);
+      audioRef.current = null;
     };
   }, []);
 
   function stopPlayback(resetStep = false) {
     playbackTokenRef.current += 1;
-    window.speechSynthesis.cancel();
+    if (advanceTimerRef.current) {
+      window.clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+    detachAudio(audioRef.current);
+    audioRef.current = null;
     setIsPlaying(false);
     if (resetStep) setStepIndex(0);
   }
@@ -179,7 +232,7 @@ export function ItalianListeningHub() {
       return;
     }
 
-    const sequence = buildSequence(item);
+    const sequence = buildSequence(category.id, item, audioById);
     const step = sequence[nextStepIndex];
     if (!step) {
       recordStudyActivity("italian", "passive_listening_item", "passive_listening", {
@@ -190,24 +243,38 @@ export function ItalianListeningHub() {
       return;
     }
 
+    if (!step.audio?.public_url || step.audio.status !== "ready") {
+      setIsPlaying(false);
+      setStatus(
+        step.audio?.status === "failed"
+          ? step.audio.error_message ?? `${step.label} audio could not be prepared.`
+          : `${step.label} ElevenLabs audio is still being prepared.`,
+      );
+      return;
+    }
+
+    const audio = replaceAudio(audioRef.current, step.audio.public_url, { playbackRate });
+    audioRef.current = audio;
     setItemIndex(nextItemIndex);
     setStepIndex(nextStepIndex);
     setStatus(step.label);
     setIsPlaying(true);
 
-    const utterance = new SpeechSynthesisUtterance(step.text);
-    utterance.lang = step.language;
-    utterance.rate = playbackRate * (step.language === "it-IT" ? 0.9 : 1);
-    utterance.onend = () => {
+    audio.onended = () => {
       if (playbackTokenRef.current !== token) return;
-      window.setTimeout(() => playStep(nextItemIndex, nextStepIndex + 1, token), 450);
+      advanceTimerRef.current = window.setTimeout(
+        () => playStep(nextItemIndex, nextStepIndex + 1, token),
+        650,
+      );
     };
-    utterance.onerror = () => {
+    audio.onerror = () => {
       if (playbackTokenRef.current !== token) return;
       setIsPlaying(false);
-      setStatus("Speech playback failed. Try pressing play again.");
+      setStatus("The stored ElevenLabs recording could not be played.");
     };
-    window.speechSynthesis.speak(utterance);
+    void playAudioElement(audio).then((started) => {
+      if (!started && playbackTokenRef.current === token) setIsPlaying(false);
+    });
   }
 
   function toggleHandsFreePlayback() {
@@ -228,7 +295,7 @@ export function ItalianListeningHub() {
     setStatus("");
   }
 
-  function selectCategory(nextCategoryId: ItalianDeck) {
+  function selectCategory(nextCategoryId: ItalianListeningCategoryId) {
     stopPlayback(true);
     setCategoryId(nextCategoryId);
     setItemIndex(0);
@@ -244,19 +311,34 @@ export function ItalianListeningHub() {
   function playScenarioLine(line: Line, index: number) {
     stopPlayback(true);
     setLineIndex(index);
-    const utterance = new SpeechSynthesisUtterance(line.italian);
-    utterance.lang = "it-IT";
-    utterance.rate = 0.82;
-    utterance.onend = () => {
+    const asset = audioById[scenarioAudioId(scenario.id, index)];
+    if (!asset?.public_url || asset.status !== "ready") {
+      setStatus(
+        asset?.status === "failed"
+          ? asset.error_message ?? "This Italian recording could not be prepared."
+          : "This Italian ElevenLabs recording is still being prepared.",
+      );
+      return;
+    }
+
+    const audio = replaceAudio(audioRef.current, asset.public_url, { playbackRate });
+    audioRef.current = audio;
+    audio.onended = () => {
       setIsPlaying(false);
       recordStudyActivity("italian", "listening_line_complete", "listening", {
         scenario_id: scenario.id,
         line: line.italian,
       });
     };
-    utterance.onerror = () => setIsPlaying(false);
+    audio.onerror = () => {
+      setIsPlaying(false);
+      setStatus("The stored ElevenLabs recording could not be played.");
+    };
     setIsPlaying(true);
-    window.speechSynthesis.speak(utterance);
+    setStatus(`Playing ${line.speaker}`);
+    void playAudioElement(audio).then((started) => {
+      if (!started) setIsPlaying(false);
+    });
   }
 
   return (
@@ -275,10 +357,10 @@ export function ItalianListeningHub() {
 
       {mode === "hands-free" ? (
         <div className="grid min-h-0 flex-1 gap-5 lg:grid-cols-[18rem_1fr]">
-          <aside className="min-h-0 rounded-[2rem] border border-black/10 bg-white/75 p-3 shadow-sm backdrop-blur">
+          <aside className="min-h-0 overflow-y-auto rounded-[2rem] border border-black/10 bg-white/75 p-3 shadow-sm backdrop-blur">
             <p className="px-2 pt-1 text-xs font-bold uppercase tracking-[0.2em] text-matcha">Categories</p>
             <div className="mt-3 space-y-2">
-              {listeningCategories.map((item) => (
+              {italianListeningCategories.map((item) => (
                 <button
                   className={twMerge(
                     "w-full rounded-2xl p-4 text-left transition",
@@ -304,7 +386,7 @@ export function ItalianListeningHub() {
                 <p className="mt-1 text-sm text-slate-500">{category.description}</p>
               </div>
               <div className="flex items-center gap-1 rounded-full bg-washi p-1">
-                {[0.8, 1, 1.15].map((rate) => (
+                {[0.75, 1, 1.25].map((rate) => (
                   <button
                     className={twMerge(
                       "rounded-full px-3 py-1.5 text-xs font-bold transition",
@@ -342,15 +424,29 @@ export function ItalianListeningHub() {
                     </span>
                   ))}
                 </div>
-                <p className="mt-5 min-h-5 text-sm font-medium text-slate-400">{status || "Ready for hands-free practice"}</p>
+                <p className="mt-5 min-h-5 text-sm font-medium text-slate-400">
+                  {status ||
+                    (isAudioLoading
+                      ? "Preparing studio-quality ElevenLabs recordings…"
+                      : "Ready for hands-free practice")}
+                </p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-3 px-4 pb-5 sm:px-6">
               <ControlButton label="Previous phrase" onClick={() => goToItem(itemIndex - 1)}><SkipBack className="h-5 w-5" /></ControlButton>
-              <button className="inline-flex h-14 items-center gap-2 rounded-full bg-ink px-6 font-bold text-white transition hover:bg-ink/90" onClick={toggleHandsFreePlayback} type="button">
+              <button
+                className="inline-flex h-14 items-center gap-2 rounded-full bg-ink px-6 font-bold text-white transition hover:bg-ink/90 disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={!activeItemHasAudio}
+                onClick={toggleHandsFreePlayback}
+                type="button"
+              >
                 {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="ml-0.5 h-5 w-5" />}
-                {isPlaying ? "Pause" : "Play category"}
+                {isPlaying
+                  ? "Pause"
+                  : activeItemHasAudio
+                    ? "Play category"
+                    : "Preparing audio…"}
               </button>
               <ControlButton label="Next phrase" onClick={() => goToItem(itemIndex + 1)}><SkipForward className="h-5 w-5" /></ControlButton>
               <ControlButton label="Restart category" onClick={() => { goToItem(0); setItemIndex(0); }}><RotateCcw className="h-5 w-5" /></ControlButton>
@@ -419,13 +515,56 @@ export function ItalianListeningHub() {
   );
 }
 
-function buildSequence(item: ItalianCard) {
+function buildSequence(
+  categoryId: ItalianListeningCategoryId,
+  item: ItalianListeningItem,
+  audioById: Record<string, AudioAsset>,
+) {
+  const englishAudio = audioById[listeningAudioId(categoryId, item.id, "en")];
+  const italianAudio = audioById[listeningAudioId(categoryId, item.id, "it")];
+
   return [
-    { label: "English", text: item.english, language: "en-US" },
-    { label: "Italian 1 of 3", text: item.italian, language: "it-IT" },
-    { label: "Italian 2 of 3", text: item.italian, language: "it-IT" },
-    { label: "Italian 3 of 3", text: item.italian, language: "it-IT" },
+    { label: "English", audio: englishAudio },
+    { label: "Italian 1 of 3", audio: italianAudio },
+    { label: "Italian 2 of 3", audio: italianAudio },
+    { label: "Italian 3 of 3", audio: italianAudio },
   ];
+}
+
+function listeningAudioId(
+  categoryId: ItalianListeningCategoryId,
+  itemId: string,
+  language: "en" | "it",
+) {
+  return `listening:${categoryId}:${itemId}:${language}`;
+}
+
+function scenarioAudioId(scenarioId: string, lineIndex: number) {
+  return `scenario:${scenarioId}:${lineIndex}:it`;
+}
+
+async function getItalianListeningManifest(
+  requests: Parameters<typeof getItalianListeningAudio>[0],
+) {
+  const batchSize = 200;
+  const batches = Array.from(
+    { length: Math.ceil(requests.length / batchSize) },
+    (_, index) => requests.slice(index * batchSize, (index + 1) * batchSize),
+  );
+  const manifests = await Promise.all(
+    batches.map((batch) => getItalianListeningAudio(batch)),
+  );
+  return manifests.flat();
+}
+
+function formatAudioError(error: unknown) {
+  const message = error instanceof Error ? error.message : "Could not load Italian audio.";
+  try {
+    const payload = JSON.parse(message) as { detail?: string };
+    return payload.detail ?? message;
+  } catch {
+    return message;
+  }
 }
 
 function ModeButton({ active, icon: Icon, label, onClick }: { active: boolean; icon: typeof Headphones; label: string; onClick: () => void }) {

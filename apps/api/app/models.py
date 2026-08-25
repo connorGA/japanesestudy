@@ -11,6 +11,7 @@ AudioStatus = Literal["pending", "ready", "failed"]
 FlashcardSection = Literal["vocabulary", "hiragana", "katakana", "kanji"]
 TutorLanguage = Literal["japanese", "italian"]
 StudyLanguage = Literal["japanese", "italian"]
+ListeningAudioLanguage = Literal["en", "it"]
 StudyActivityType = Literal[
     "flashcard_retry",
     "flashcard_mastered",
@@ -127,6 +128,21 @@ class PassiveListeningCategory(BaseModel):
     title: str
     description: str
     items: list[PassiveListeningItem]
+
+
+class ItalianListeningAudioRequestItem(BaseModel):
+    id: str = Field(min_length=1, max_length=120)
+    text: str = Field(min_length=1, max_length=500)
+    language: ListeningAudioLanguage
+
+
+class ItalianListeningAudioRequest(BaseModel):
+    items: list[ItalianListeningAudioRequestItem] = Field(min_length=1, max_length=200)
+
+
+class ItalianListeningAudioItem(BaseModel):
+    id: str
+    audio: AudioAsset
 
 
 class TutorResponse(TutorPayload):

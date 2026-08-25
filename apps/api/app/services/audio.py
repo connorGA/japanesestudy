@@ -81,17 +81,7 @@ class AudioService:
         assets_by_hash: dict[str, AudioAsset] = {}
         if self._client and cache_keys:
             try:
-                response = (
-                    self._client.table("audio_assets")
-                    .select("content_hash,id,text,status,public_url,error_message")
-                    .in_("content_hash", list(cache_keys.values()))
-                    .execute()
-                )
-                if response and response.data:
-                    assets_by_hash = {
-                        row["content_hash"]: AudioAsset.model_validate(row)
-                        for row in response.data
-                    }
+                assets_by_hash = self._load_assets_by_hash(list(cache_keys.values()))
             except Exception as err:
                 return {
                     text: AudioAsset(
@@ -141,17 +131,7 @@ class AudioService:
         assets_by_hash: dict[str, AudioAsset] = {}
         if self._client and cache_keys:
             try:
-                response = (
-                    self._client.table("audio_assets")
-                    .select("content_hash,id,text,status,public_url,error_message")
-                    .in_("content_hash", list(cache_keys.values()))
-                    .execute()
-                )
-                if response and response.data:
-                    assets_by_hash = {
-                        row["content_hash"]: AudioAsset.model_validate(row)
-                        for row in response.data
-                    }
+                assets_by_hash = self._load_assets_by_hash(list(cache_keys.values()))
             except Exception as err:
                 return {
                     item: AudioAsset(
@@ -236,17 +216,7 @@ class AudioService:
         assets_by_hash: dict[str, AudioAsset] = {}
         if self._client and cache_keys:
             try:
-                response = (
-                    self._client.table("audio_assets")
-                    .select("content_hash,id,text,status,public_url,error_message")
-                    .in_("content_hash", list(cache_keys.values()))
-                    .execute()
-                )
-                if response and response.data:
-                    assets_by_hash = {
-                        row["content_hash"]: AudioAsset.model_validate(row)
-                        for row in response.data
-                    }
+                assets_by_hash = self._load_assets_by_hash(list(cache_keys.values()))
             except Exception as err:
                 return {
                     item: AudioAsset(
@@ -262,7 +232,49 @@ class AudioService:
         for item, cache_key in cache_keys.items():
             existing = assets_by_hash.get(cache_key) or self._assets.get(cache_key)
             if existing:
-                assets[item] = existing
+                if (
+                    existing.status == "failed"
+                    and background_tasks
+                    and self._settings.elevenlabs_api_key
+                    and item[1]
+                ):
+                    pending_asset = existing.model_copy(
+                        update={"status": "pending", "error_message": None}
+                    )
+                    self._assets[cache_key] = pending_asset
+                    if self._client:
+                        self._client.table("audio_assets").update(
+                            {"status": "pending", "error_message": None}
+                        ).eq("id", pending_asset.id).execute()
+                    background_tasks.add_task(
+                        self._generate_and_store,
+                        pending_asset,
+                        cache_key,
+                        item[1],
+                        item[2],
+                    )
+                    assets[item] = pending_asset
+                elif (
+                    existing.status == "pending"
+                    and cache_key not in self._assets
+                    and background_tasks
+                    and self._settings.elevenlabs_api_key
+                    and item[1]
+                ):
+                    # A prior process can leave pending rows behind if the dev server
+                    # reloads during generation. Claim and resume each one once in this
+                    # process so the manifest cannot remain stuck indefinitely.
+                    self._assets[cache_key] = existing
+                    background_tasks.add_task(
+                        self._generate_and_store,
+                        existing,
+                        cache_key,
+                        item[1],
+                        item[2],
+                    )
+                    assets[item] = existing
+                else:
+                    assets[item] = existing
                 continue
 
             text, voice_id, language_code = item
@@ -361,6 +373,28 @@ class AudioService:
             if response and response.data:
                 return AudioAsset.model_validate(response.data)
         return self._assets.get(cache_key)
+
+    def _load_assets_by_hash(self, cache_keys: list[str]) -> dict[str, AudioAsset]:
+        if not self._client:
+            return {}
+
+        assets_by_hash: dict[str, AudioAsset] = {}
+        batch_size = 50
+        for start in range(0, len(cache_keys), batch_size):
+            response = (
+                self._client.table("audio_assets")
+                .select("content_hash,id,text,status,public_url,error_message")
+                .in_("content_hash", cache_keys[start : start + batch_size])
+                .execute()
+            )
+            if response and response.data:
+                assets_by_hash.update(
+                    {
+                        row["content_hash"]: AudioAsset.model_validate(row)
+                        for row in response.data
+                    }
+                )
+        return assets_by_hash
 
     def _create_and_queue(
         self,

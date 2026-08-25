@@ -27,6 +27,10 @@ class Settings(BaseSettings):
         default=None,
         alias="ELEVENLABS_ENGLISH_VOICE_ID",
     )
+    elevenlabs_italian_voice_id: Optional[str] = Field(
+        default=None,
+        alias="ELEVENLABS_ITALIAN_VOICE_ID",
+    )
     elevenlabs_model_id: str = Field(default="eleven_multilingual_v2", alias="ELEVENLABS_MODEL_ID")
     elevenlabs_language_code: str = Field(default="ja", alias="ELEVENLABS_LANGUAGE_CODE")
 
@@ -37,6 +41,10 @@ class Settings(BaseSettings):
     @property
     def passive_listening_japanese_voice_id(self) -> Optional[str]:
         return self.elevenlabs_voice_id
+
+    @property
+    def passive_listening_italian_voice_id(self) -> Optional[str]:
+        return self.elevenlabs_italian_voice_id
 
     supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
     supabase_anon_key: Optional[str] = Field(default=None, alias="SUPABASE_ANON_KEY")

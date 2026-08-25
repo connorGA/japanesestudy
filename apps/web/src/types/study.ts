@@ -96,6 +96,11 @@ export type PassiveListeningCategory = {
   items: PassiveListeningItem[];
 };
 
+export type ItalianListeningAudioItem = {
+  id: string;
+  audio: AudioAsset;
+};
+
 export type ReviewItem = {
   id: string;
   item_type: "vocabulary" | "grammar" | "sentence" | "listening";

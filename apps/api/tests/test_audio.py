@@ -10,3 +10,10 @@ def test_audio_cache_key_changes_by_voice_and_model() -> None:
     second = audio_cache_key("こんにちは", "voice-b", "model-a")
 
     assert first != second
+
+
+def test_audio_cache_key_changes_by_language() -> None:
+    english = audio_cache_key("casa", "voice-a", "model-a", "en")
+    italian = audio_cache_key("casa", "voice-a", "model-a", "it")
+
+    assert english != italian

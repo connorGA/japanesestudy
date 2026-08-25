@@ -2,6 +2,7 @@ import type {
   AudioAsset,
   Flashcard,
   FlashcardSection,
+  ItalianListeningAudioItem,
   ListeningScenario,
   PassiveListeningCategory,
   ReviewCandidate,
@@ -111,6 +112,15 @@ export function getListeningScenarios(): Promise<ListeningScenario[]> {
 
 export function getPassiveListeningCategories(): Promise<PassiveListeningCategory[]> {
   return request<PassiveListeningCategory[]>("/api/passive-listening/categories");
+}
+
+export function getItalianListeningAudio(
+  items: Array<{ id: string; text: string; language: "en" | "it" }>,
+): Promise<ItalianListeningAudioItem[]> {
+  return request<ItalianListeningAudioItem[]>("/api/italian/listening/audio", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
 }
 
 export function gradeReview(input: {

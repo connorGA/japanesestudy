@@ -8,6 +8,8 @@ from app.models import (
     AudioRequest,
     Flashcard,
     FlashcardSection,
+    ItalianListeningAudioItem,
+    ItalianListeningAudioRequest,
     ListeningLine,
     ListeningScenario,
     PassiveListeningCategory,
@@ -26,7 +28,7 @@ from app.models import (
     TutorRequest,
     TutorResponse,
 )
-from app.services.audio import AudioService
+from app.services.audio import AudioService, normalize_audio_text
 from app.services.flashcards import BASIC_FLASHCARDS
 from app.services.kana import (
     HIRAGANA,
@@ -110,6 +112,55 @@ def hiragana_audio(background_tasks: BackgroundTasks) -> list[AudioAsset]:
 @app.get("/api/audio/katakana")
 def katakana_audio(background_tasks: BackgroundTasks) -> list[AudioAsset]:
     return [audio.get_or_queue(character, background_tasks) for character in KATAKANA_CHARACTERS]
+
+
+@app.post("/api/italian/listening/audio")
+def italian_listening_audio(
+    request: ItalianListeningAudioRequest,
+    background_tasks: BackgroundTasks,
+) -> list[ItalianListeningAudioItem]:
+    app_settings = get_settings()
+    english_voice_id = app_settings.passive_listening_english_voice_id
+    italian_voice_id = app_settings.passive_listening_italian_voice_id
+
+    if not app_settings.elevenlabs_api_key:
+        raise HTTPException(status_code=503, detail="ELEVENLABS_API_KEY is not configured.")
+    if not english_voice_id:
+        raise HTTPException(
+            status_code=503,
+            detail="ELEVENLABS_ENGLISH_VOICE_ID is not configured.",
+        )
+    if not italian_voice_id:
+        raise HTTPException(
+            status_code=503,
+            detail="ELEVENLABS_ITALIAN_VOICE_ID is not configured.",
+        )
+    if english_voice_id == italian_voice_id:
+        raise HTTPException(
+            status_code=503,
+            detail="English and Italian listening voices must be different.",
+        )
+
+    voice_by_language = {"en": english_voice_id, "it": italian_voice_id}
+    audio_items = [
+        (normalize_audio_text(item.text), voice_by_language[item.language], item.language)
+        for item in request.items
+    ]
+    audio_assets = audio.get_many_or_queue_for_configs(audio_items, background_tasks)
+
+    return [
+        ItalianListeningAudioItem(
+            id=item.id,
+            audio=audio_assets[
+                (
+                    normalize_audio_text(item.text),
+                    voice_by_language[item.language],
+                    item.language,
+                )
+            ],
+        )
+        for item in request.items
+    ]
 
 
 @app.get("/api/flashcards")
