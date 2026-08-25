@@ -4,10 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { getListeningScenarios } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { getItalianListeningScenarios } from "@/lib/italianListening";
 import { recordStudyActivity } from "@/lib/progress";
 import type { ListeningScenario } from "@/types/study";
 
-export function ListeningPractice() {
+export function ListeningPractice({
+  language = "japanese",
+}: {
+  language?: "japanese" | "italian";
+}) {
   const [scenarios, setScenarios] = useState<ListeningScenario[]>([]);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
   const [activeLineIndex, setActiveLineIndex] = useState<number | null>(null);
@@ -16,7 +21,10 @@ export function ListeningPractice() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    getListeningScenarios()
+    const loadScenarios =
+      language === "italian" ? getItalianListeningScenarios : getListeningScenarios;
+
+    loadScenarios()
       .then((items) => {
         setScenarios(items);
         setActiveScenarioId(items[0]?.id ?? null);
@@ -29,7 +37,7 @@ export function ListeningPractice() {
     return () => {
       detachAudio(audioRef.current);
     };
-  }, []);
+  }, [language]);
 
   const activeScenario =
     scenarios.find((scenario) => scenario.id === activeScenarioId) ?? scenarios[0];
@@ -69,7 +77,7 @@ export function ListeningPractice() {
     setIsPlaying(true);
     setStatus("");
     audio.onended = () => {
-      recordStudyActivity("japanese", "listening_line_complete", "listening", {
+      recordStudyActivity(language, "listening_line_complete", "listening", {
         scenario_id: activeScenario.id,
         line_index: index,
       });

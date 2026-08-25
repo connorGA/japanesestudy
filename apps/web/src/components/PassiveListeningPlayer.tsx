@@ -23,10 +23,9 @@ import {
 import { twMerge } from "tailwind-merge";
 import { getPassiveListeningCategories } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
+import { getItalianPassiveListeningCategories } from "@/lib/italianListening";
 import { recordStudyActivity } from "@/lib/progress";
 import type { AudioAsset, PassiveListeningCategory } from "@/types/study";
-
-const PROGRESS_STORAGE_KEY = "japanese-study.passive-listening-progress";
 
 const categoryIcons: Record<string, LucideIcon> = {
   food: UtensilsCrossed,
@@ -45,7 +44,11 @@ function categoryIcon(categoryId: string) {
   return categoryIcons[categoryId] ?? Headphones;
 }
 
-export function PassiveListeningPlayer() {
+export function PassiveListeningPlayer({
+  language = "japanese",
+}: {
+  language?: "japanese" | "italian";
+}) {
   const [categories, setCategories] = useState<PassiveListeningCategory[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [itemIndex, setItemIndex] = useState(0);
@@ -56,14 +59,31 @@ export function PassiveListeningPlayer() {
   const [isLoading, setIsLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const pauseTimerRef = useRef<number | null>(null);
+  const progressStorageKey = `${language}-study.passive-listening-progress`;
 
   useEffect(() => {
-    getPassiveListeningCategories()
+    const loadCategories =
+      language === "italian"
+        ? getItalianPassiveListeningCategories
+        : getPassiveListeningCategories;
+
+    loadCategories()
       .then((items) => {
-        const storedProgress = getStoredProgress();
+        const storedProgress = getStoredProgress(progressStorageKey);
+        const storedCategory = items.find(
+          (category) => category.id === storedProgress?.categoryId,
+        );
+        const initialCategory = storedCategory ?? items[0];
         setCategories(items);
-        setActiveCategoryId(storedProgress?.categoryId ?? items[0]?.id ?? null);
-        setItemIndex(storedProgress?.itemIndex ?? 0);
+        setActiveCategoryId(initialCategory?.id ?? null);
+        setItemIndex(
+          initialCategory
+            ? Math.max(
+                0,
+                Math.min(storedProgress?.itemIndex ?? 0, initialCategory.items.length - 1),
+              )
+            : 0,
+        );
       })
       .catch((err) =>
         setStatus(err instanceof Error ? err.message : "Could not load passive listening"),
@@ -78,7 +98,7 @@ export function PassiveListeningPlayer() {
       detachAudio(audioRef.current);
       audioRef.current = null;
     };
-  }, []);
+  }, [language, progressStorageKey]);
 
   const activeCategory =
     categories.find((category) => category.id === activeCategoryId) ?? categories[0];
@@ -89,10 +109,10 @@ export function PassiveListeningPlayer() {
     if (!activeCategoryId) return;
 
     window.localStorage.setItem(
-      PROGRESS_STORAGE_KEY,
+      progressStorageKey,
       JSON.stringify({ categoryId: activeCategoryId, itemIndex }),
     );
-  }, [activeCategoryId, itemIndex]);
+  }, [activeCategoryId, itemIndex, progressStorageKey]);
 
   function clearPauseTimer() {
     if (pauseTimerRef.current) {
@@ -129,7 +149,7 @@ export function PassiveListeningPlayer() {
     const steps = buildSequence(item);
     const step = steps[nextStepIndex];
     if (!step) {
-      recordStudyActivity("japanese", "passive_listening_item", "passive_listening", {
+      recordStudyActivity(language, "passive_listening_item", "passive_listening", {
         category_id: activeCategory.id,
         item_id: item.id,
       });
@@ -376,9 +396,9 @@ function buildSequence(item: {
   ];
 }
 
-function getStoredProgress() {
+function getStoredProgress(storageKey: string) {
   try {
-    const value = window.localStorage.getItem(PROGRESS_STORAGE_KEY);
+    const value = window.localStorage.getItem(storageKey);
     return value ? (JSON.parse(value) as { categoryId: string; itemIndex: number }) : null;
   } catch {
     return null;

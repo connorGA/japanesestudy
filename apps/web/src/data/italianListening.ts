@@ -23,6 +23,15 @@ export type ItalianListeningCategory = {
   items: ItalianListeningItem[];
 };
 
+export type ItalianListeningScenario = {
+  id: string;
+  title: string;
+  setting: string;
+  level: string;
+  description: string;
+  lines: Array<{ speaker: string; italian: string; english: string }>;
+};
+
 export const italianListeningCategories: ItalianListeningCategory[] = [
   {
     id: "food",
@@ -265,6 +274,74 @@ export const italianListeningCategories: ItalianListeningCategory[] = [
       { id: "far", english: "far", italian: "lontano" },
       { id: "quiet", english: "quiet", italian: "tranquillo" },
       { id: "busy", english: "busy", italian: "occupato" },
+    ],
+  },
+];
+
+export const italianListeningScenarios: ItalianListeningScenario[] = [
+  {
+    id: "cafe",
+    title: "At the café",
+    setting: "Neighborhood bar",
+    level: "Beginner",
+    description: "Order a coffee and pay at the counter.",
+    lines: [
+      { speaker: "Barista", italian: "Buongiorno, desidera?", english: "Good morning, what would you like?" },
+      { speaker: "You", italian: "Un cappuccino e un cornetto, per favore.", english: "A cappuccino and a croissant, please." },
+      { speaker: "Barista", italian: "Altro?", english: "Anything else?" },
+      { speaker: "You", italian: "No, grazie. Quanto costa?", english: "No, thank you. How much is it?" },
+    ],
+  },
+  {
+    id: "introduction",
+    title: "First introduction",
+    setting: "Language class",
+    level: "Beginner",
+    description: "Share your name, origin, and interests.",
+    lines: [
+      { speaker: "A", italian: "Ciao! Come ti chiami?", english: "Hi! What's your name?" },
+      { speaker: "B", italian: "Mi chiamo Alex. E tu?", english: "My name is Alex. And you?" },
+      { speaker: "A", italian: "Sono Giulia. Di dove sei?", english: "I'm Giulia. Where are you from?" },
+      { speaker: "B", italian: "Sono degli Stati Uniti.", english: "I'm from the United States." },
+    ],
+  },
+  {
+    id: "station",
+    title: "Finding the train",
+    setting: "Railway station",
+    level: "Beginner",
+    description: "Find the right platform and departure time.",
+    lines: [
+      { speaker: "You", italian: "Scusi, da quale binario parte il treno per Firenze?", english: "Excuse me, which platform does the train to Florence leave from?" },
+      { speaker: "Staff", italian: "Parte dal binario sette.", english: "It leaves from platform seven." },
+      { speaker: "You", italian: "A che ora parte?", english: "What time does it leave?" },
+      { speaker: "Staff", italian: "Alle quattordici e venti.", english: "At two twenty p.m." },
+    ],
+  },
+  {
+    id: "directions",
+    title: "Asking directions",
+    setting: "City street",
+    level: "Beginner",
+    description: "Ask how to reach the town square.",
+    lines: [
+      { speaker: "You", italian: "Mi scusi, come si arriva in piazza?", english: "Excuse me, how do you get to the square?" },
+      { speaker: "Local", italian: "Vada sempre dritto, poi giri a sinistra.", english: "Go straight ahead, then turn left." },
+      { speaker: "You", italian: "È lontano?", english: "Is it far?" },
+      { speaker: "Local", italian: "No, sono cinque minuti a piedi.", english: "No, it's a five-minute walk." },
+    ],
+  },
+  {
+    id: "restaurant",
+    title: "Dinner out",
+    setting: "Trattoria",
+    level: "A1–A2",
+    description: "Ask about a dish and order dinner.",
+    lines: [
+      { speaker: "Server", italian: "Siete pronti per ordinare?", english: "Are you ready to order?" },
+      { speaker: "You", italian: "Che cosa consiglia?", english: "What do you recommend?" },
+      { speaker: "Server", italian: "La pasta alla norma è la specialità della casa.", english: "Pasta alla Norma is the house specialty." },
+      { speaker: "You", italian: "Perfetto, prendo quella.", english: "Perfect, I'll have that." },
     ],
   },
 ];
