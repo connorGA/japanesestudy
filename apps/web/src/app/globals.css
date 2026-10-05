@@ -18,6 +18,13 @@
   --color-washi: 255 249 238;
 }
 
+.theme-spanish {
+  --color-ink: 46 33 28;
+  --color-sakura: 246 201 140;
+  --color-matcha: 183 76 42;
+  --color-washi: 255 248 237;
+}
+
 .theme-dashboard {
   --color-ink: 30 37 53;
   --color-sakura: 202 213 255;
@@ -44,6 +51,13 @@ body[data-theme="italian"] {
     radial-gradient(circle at top right, rgba(190, 55, 48, 0.14), transparent 30rem),
     radial-gradient(circle at bottom left, rgba(46, 125, 91, 0.16), transparent 34rem),
     linear-gradient(135deg, #fff9ee 0%, #f5f0e4 100%);
+}
+
+body[data-theme="spanish"] {
+  background:
+    radial-gradient(circle at top right, rgba(232, 137, 58, 0.18), transparent 30rem),
+    radial-gradient(circle at bottom left, rgba(31, 78, 140, 0.13), transparent 34rem),
+    linear-gradient(135deg, #fff8ed 0%, #f7eddc 100%);
 }
 
 body[data-theme="dashboard"] {
@@ -80,6 +94,22 @@ body[data-theme="dashboard"] {
 
 .italian-drift {
   animation: italian-drift 7s ease-in-out infinite;
+}
+
+@keyframes papel-sway {
+  0%,
+  100% {
+    transform: rotate(-2.5deg);
+  }
+  50% {
+    transform: rotate(2.5deg);
+  }
+}
+
+.papel-sway {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: papel-sway 4.5s ease-in-out infinite;
 }
 
 button,
@@ -224,7 +254,8 @@ select {
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-rise,
-  .italian-drift {
+  .italian-drift,
+  .papel-sway {
     animation: none;
   }
 

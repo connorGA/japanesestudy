@@ -8,28 +8,35 @@ import { PassiveListeningPlayer } from "@/components/PassiveListeningPlayer";
 
 type ListeningMode = "passive" | "scenarios";
 
-const modes: {
+type HubLanguage = "italian" | "spanish";
+
+const languageNames: Record<HubLanguage, string> = { italian: "Italian", spanish: "Spanish" };
+
+function listeningModes(language: HubLanguage): {
   id: ListeningMode;
   label: string;
   description: string;
   icon: typeof Headphones;
-}[] = [
-  {
-    id: "passive",
-    label: "Passive listening",
-    description: "English-to-Italian drills that keep playing.",
-    icon: Headphones,
-  },
-  {
-    id: "scenarios",
-    label: "Scenario library",
-    description: "Follow complete conversations line by line.",
-    icon: MessagesSquare,
-  },
-];
+}[] {
+  return [
+    {
+      id: "passive",
+      label: "Passive listening",
+      description: `English-to-${languageNames[language]} drills that keep playing.`,
+      icon: Headphones,
+    },
+    {
+      id: "scenarios",
+      label: "Scenario library",
+      description: "Follow complete conversations line by line.",
+      icon: MessagesSquare,
+    },
+  ];
+}
 
-export function ItalianListeningHub() {
+export function ItalianListeningHub({ language = "italian" }: { language?: HubLanguage }) {
   const [mode, setMode] = useState<ListeningMode>("passive");
+  const modes = listeningModes(language);
 
   useEffect(() => {
     const requestedMode = new URLSearchParams(window.location.search).get("mode");
@@ -103,9 +110,9 @@ export function ItalianListeningHub() {
         )}
       >
         {mode === "passive" ? (
-          <PassiveListeningPlayer language="italian" />
+          <PassiveListeningPlayer language={language} />
         ) : (
-          <ListeningPractice language="italian" />
+          <ListeningPractice language={language} />
         )}
       </div>
     </div>

@@ -25,6 +25,8 @@ from app.models import (
     RoleplayRequest,
     RoleplayTurn,
     Scenario,
+    SpanishAudioRequest,
+    SpanishAudioRequestItem,
     TutorRequest,
     TutorResponse,
 )
@@ -92,8 +94,8 @@ async def create_realtime_tutor_session(
     request: RealtimeTutorSessionRequest,
 ) -> dict:
     try:
-        if request.language == "italian":
-            return await realtime_tutor.create_client_secret(request.client_id, "italian")
+        if request.language in ("italian", "spanish"):
+            return await realtime_tutor.create_client_secret(request.client_id, request.language)
         return await realtime_tutor.create_client_secret(request.client_id)
     except RuntimeError as err:
         raise HTTPException(status_code=502, detail=str(err)) from err
@@ -159,6 +161,53 @@ def italian_listening_audio(
                 )
             ],
         )
+        for item in request.items
+    ]
+
+
+@app.post("/api/spanish/audio")
+def spanish_audio(
+    request: SpanishAudioRequest,
+    background_tasks: BackgroundTasks,
+) -> list[ItalianListeningAudioItem]:
+    app_settings = get_settings()
+    english_voice_id = app_settings.passive_listening_english_voice_id
+    spanish_voice_id = app_settings.spanish_voice_id
+    spanish_secondary_voice_id = app_settings.spanish_secondary_voice_id
+
+    if not app_settings.elevenlabs_api_key:
+        raise HTTPException(status_code=503, detail="ELEVENLABS_API_KEY is not configured.")
+    if not english_voice_id:
+        raise HTTPException(
+            status_code=503,
+            detail="ELEVENLABS_ENGLISH_VOICE_ID is not configured.",
+        )
+    if not spanish_voice_id:
+        raise HTTPException(
+            status_code=503,
+            detail="ELEVENLABS_SPANISH_VOICE_ID is not configured.",
+        )
+    if english_voice_id in (spanish_voice_id, spanish_secondary_voice_id):
+        raise HTTPException(
+            status_code=503,
+            detail="English and Spanish voices must be different.",
+        )
+
+    def config_for(item: SpanishAudioRequestItem) -> tuple[str, str, str]:
+        if item.language == "en":
+            voice_id = english_voice_id
+        elif item.voice == "secondary":
+            voice_id = spanish_secondary_voice_id
+        else:
+            voice_id = spanish_voice_id
+        return normalize_audio_text(item.text), voice_id, item.language
+
+    audio_assets = audio.get_many_or_queue_for_configs(
+        [config_for(item) for item in request.items],
+        background_tasks,
+    )
+    return [
+        ItalianListeningAudioItem(id=item.id, audio=audio_assets[config_for(item)])
         for item in request.items
     ]
 

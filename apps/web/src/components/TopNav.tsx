@@ -29,22 +29,45 @@ const italianItems = [
   { href: "/italian/verbs", label: "Verbs" },
 ];
 
+const spanishItems = [
+  { href: "/spanish", label: "Home" },
+  { href: "/spanish/tutor", label: "Tutor" },
+  { href: "/spanish/flashcards", label: "Flashcards" },
+  { href: "/spanish/listening", label: "Listening" },
+  { href: "/spanish/arcade", label: "Arcade" },
+  { href: "/spanish/pronunciation", label: "Pronunciation" },
+  { href: "/spanish/grammar", label: "Grammar" },
+  { href: "/spanish/verbs", label: "Verbs" },
+  { href: "/spanish/expressions", label: "Expressions" },
+];
+
+const brand = {
+  japanese: { title: "Japanese Study", tagline: "AI practice lab" },
+  italian: { title: "Italian Study", tagline: "La dolce lingua" },
+  spanish: { title: "Spanish Study", tagline: "Español de México" },
+  dashboard: { title: "Language Study", tagline: "Your learning studio" },
+};
+
 export function TopNav() {
   const pathname = usePathname();
   const [hasScrolled, setHasScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const isItalian = pathname.startsWith("/italian");
   const isJapanese = pathname.startsWith("/japanese");
-  const theme = isItalian ? "italian" : isJapanese ? "japanese" : "dashboard";
+  const isSpanish = pathname.startsWith("/spanish");
+  const theme = isItalian ? "italian" : isJapanese ? "japanese" : isSpanish ? "spanish" : "dashboard";
   const items = isItalian
-      ? italianItems
-      : isJapanese
-        ? japaneseItems
+    ? italianItems
+    : isJapanese
+      ? japaneseItems
+      : isSpanish
+        ? spanishItems
         : [
           { href: "/japanese", label: "Japanese" },
           { href: "/italian", label: "Italian" },
+          { href: "/spanish", label: "Spanish" },
         ];
-  const languageHome = isItalian ? "/italian" : isJapanese ? "/japanese" : "/";
+  const languageHome = theme === "dashboard" ? "/" : `/${theme}`;
   const isTransparentHome =
     pathname === languageHome && isJapanese && !hasScrolled && !menuOpen;
 
@@ -73,6 +96,7 @@ export function TopNav() {
       className={twMerge(
         "top-0 z-30 bg-transparent",
         theme === "italian" && "theme-italian",
+        theme === "spanish" && "theme-spanish",
         theme === "dashboard" && "theme-dashboard",
         isTransparentHome ? "fixed inset-x-0" : "sticky",
       )}
@@ -99,7 +123,7 @@ export function TopNav() {
           </span>
           <span className="min-w-0">
             <span className="block truncate text-sm leading-none lg:text-base">
-              {isItalian ? "Italian Study" : isJapanese ? "Japanese Study" : "Language Study"}
+              {brand[theme].title}
             </span>
             <span
               className={twMerge(
@@ -107,11 +131,7 @@ export function TopNav() {
                 isTransparentHome ? "text-sakura" : "text-matcha",
               )}
             >
-              {isItalian
-                ? "La dolce lingua"
-                : isJapanese
-                  ? "AI practice lab"
-                  : "Your learning studio"}
+              {brand[theme].tagline}
             </span>
           </span>
         </Link>
@@ -151,6 +171,9 @@ export function TopNav() {
                 theme === "dashboard" &&
                   item.href === "/italian" &&
                   "border-[#2f8a62]/20 bg-[linear-gradient(135deg,rgba(237,249,241,0.94),rgba(255,255,255,0.92),rgba(255,240,239,0.9))] text-[#255f48] shadow-none hover:border-[#2f8a62]/35 hover:bg-[#f4fbf6] hover:text-[#194a37]",
+                theme === "dashboard" &&
+                  item.href === "/spanish" &&
+                  "border-[#cf6332]/20 bg-[linear-gradient(135deg,rgba(255,243,226,0.94),rgba(255,255,255,0.92),rgba(234,241,252,0.9))] text-[#8a3a1f] shadow-none hover:border-[#cf6332]/35 hover:bg-[#fff7ee] hover:text-[#6e2c16]",
                 isActiveHref(item.href) &&
                   (isTransparentHome
                     ? "border-white/50 bg-white/25 text-white drop-shadow"
@@ -182,6 +205,9 @@ export function TopNav() {
                   theme === "dashboard" &&
                     item.href === "/italian" &&
                     "bg-[linear-gradient(135deg,#eef9f1,#fff,#fff0ef)] text-[#255f48]",
+                  theme === "dashboard" &&
+                    item.href === "/spanish" &&
+                    "bg-[linear-gradient(135deg,#fff3e2,#fff,#eaf1fc)] text-[#8a3a1f]",
                 )}
                 href={item.href}
                 key={item.href}
@@ -222,6 +248,20 @@ function CountryNavDecoration({ href }: { href: string }) {
           fill
           sizes="160px"
           src="/dashboard/italian-nav-art.png"
+        />
+      </span>
+    );
+  }
+
+  if (href === "/spanish") {
+    return (
+      <span aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <Image
+          alt=""
+          className="object-cover object-right opacity-35 mix-blend-multiply"
+          fill
+          sizes="160px"
+          src="/dashboard/spanish-nav-art.png"
         />
       </span>
     );

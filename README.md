@@ -1,10 +1,13 @@
 # Language Study
 
-A multi-language learning studio with a shared progress dashboard and dedicated Japanese and
-Italian experiences. Japanese includes its original realtime bilingual voice tutor, character
-study, cached audio, passive listening, flashcards, games, and roleplay. Italian adds a tailored
-realtime tutor, vocabulary and phrase flashcards, browser-native pronunciation, listening
-scenarios, grammar guides, a verb lab, and arcade drills.
+A multi-language learning studio with a shared progress dashboard and dedicated Japanese,
+Italian, and Spanish experiences. Japanese includes its original realtime bilingual voice tutor,
+character study, cached audio, passive listening, flashcards, games, and roleplay. Italian adds a
+tailored realtime tutor, vocabulary and phrase flashcards, browser-native pronunciation, listening
+scenarios, grammar guides, a verb lab, and arcade drills. Spanish focuses on Mexican and Latin
+American Spanish: a Mexico City realtime tutor, native-voice ElevenLabs audio across flashcards,
+pronunciation, grammar, the verb lab, and two-voice listening scenarios, plus Mexican slang,
+a regional vocabulary comparison, and arcade drills including ser vs. estar.
 
 ## Stack
 
@@ -32,6 +35,19 @@ scenarios, grammar guides, a verb lab, and arcade drills.
 
 The web app runs on `http://localhost:3005` and the API runs on `http://localhost:8005`.
 
+## Spanish audio
+
+Spanish clips use two Mexican Spanish ElevenLabs voices, configured with
+`ELEVENLABS_SPANISH_VOICE_ID` (primary) and `ELEVENLABS_SPANISH_VOICE_ID_2` (second speaker in
+dialogues). Clips are generated on first request and cached in Supabase. To pre-generate every
+clip in the Spanish section, run the API and then:
+
+```bash
+npm run generate:spanish-audio
+```
+
+Pass `-- --api https://your-api.example.com` to warm a deployed API instead.
+
 ## Progress and study points
 
 The dashboard heatmaps and totals are rebuilt from progress events stored in Supabase. This
@@ -45,7 +61,7 @@ IDs prevent a retry from awarding points twice.
 | Flashcard marked for retry | 1 | 50 |
 | Flashcard mastered | 3 | 50 |
 | Pronunciation playback | 1 | 20 |
-| Italian verb-form practice | 1 | 30 |
+| Italian or Spanish verb-form practice | 1 | 30 |
 | Listening line completed | 2 | 30 |
 | Passive-listening item completed | 3 | 20 |
 | Correct arcade answer | 2 | 60 |

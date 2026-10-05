@@ -10,6 +10,7 @@ import {
 export type { StudyActivity, StudyLanguage };
 export type ProgressStore = Record<StudyLanguage, Record<string, number>>;
 
+export const STUDY_LANGUAGES: readonly StudyLanguage[] = ["japanese", "italian", "spanish"];
 export const PROGRESS_STORAGE_KEY = "language-study.progress.v1";
 export const PROGRESS_EVENT = "language-study-progress";
 
@@ -34,7 +35,7 @@ export const STUDY_ACTIVITY_POINTS: Record<StudyActivity, number> = {
 let flushPromise: Promise<void> | null = null;
 
 export function emptyProgress(): ProgressStore {
-  return { japanese: {}, italian: {} };
+  return { japanese: {}, italian: {}, spanish: {} };
 }
 
 export function readProgress(): ProgressStore {
@@ -47,6 +48,7 @@ export function readProgress(): ProgressStore {
     return {
       japanese: parsed.japanese ?? {},
       italian: parsed.italian ?? {},
+      spanish: parsed.spanish ?? {},
     };
   } catch {
     return emptyProgress();
@@ -89,7 +91,7 @@ export async function syncProgress() {
   try {
     if (!window.localStorage.getItem(IMPORT_COMPLETE_KEY)) {
       const local = readProgress();
-      const records = (["japanese", "italian"] as const).flatMap((language) =>
+      const records = STUDY_LANGUAGES.flatMap((language) =>
         Object.entries(local[language]).map(([date, points]) => ({
           language,
           date,

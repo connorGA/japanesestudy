@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: "Language Study",
     template: "%s | Language Study",
   },
-  description: "Personalized Japanese and Italian practice with audio, flashcards, games, and AI tutoring.",
+  description: "Personalized Japanese, Italian, and Spanish practice with audio, flashcards, games, and AI tutoring.",
   icons: {
     icon: [
       { url: "/brand/favicon-32.png", sizes: "32x32", type: "image/png" },
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Language Study",
-    description: "Personalized Japanese and Italian practice in one learning dashboard.",
+    description: "Personalized Japanese, Italian, and Spanish practice in one learning dashboard.",
     images: [{ url: "/brand/favicon-512.png", width: 512, height: 512, alt: "Language Study" }],
   },
 };

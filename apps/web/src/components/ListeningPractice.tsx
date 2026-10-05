@@ -6,12 +6,19 @@ import { getListeningScenarios } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
 import { getItalianListeningScenarios } from "@/lib/italianListening";
 import { recordStudyActivity } from "@/lib/progress";
+import { getSpanishListeningScenarios } from "@/lib/spanishListening";
 import type { ListeningScenario } from "@/types/study";
+
+const scenarioLoaders = {
+  japanese: getListeningScenarios,
+  italian: getItalianListeningScenarios,
+  spanish: getSpanishListeningScenarios,
+};
 
 export function ListeningPractice({
   language = "japanese",
 }: {
-  language?: "japanese" | "italian";
+  language?: keyof typeof scenarioLoaders;
 }) {
   const [scenarios, setScenarios] = useState<ListeningScenario[]>([]);
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null);
@@ -21,10 +28,7 @@ export function ListeningPractice({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const loadScenarios =
-      language === "italian" ? getItalianListeningScenarios : getListeningScenarios;
-
-    loadScenarios()
+    scenarioLoaders[language]()
       .then((items) => {
         setScenarios(items);
         setActiveScenarioId(items[0]?.id ?? null);

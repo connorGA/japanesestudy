@@ -43,6 +43,15 @@ const tutorConfig = {
       "Ask me beginner questions in Italian.",
     ],
   },
+  spanish: {
+    name: "Spanish",
+    clientKey: "spanish-study.realtime-client-id",
+    starters: [
+      "Let's roleplay ordering at a taquería in Mexico City.",
+      "Help me practice a simple self-introduction.",
+      "Teach me some everyday Mexican slang.",
+    ],
+  },
 } as const;
 
 const REALTIME_PRICING_PER_MILLION = {

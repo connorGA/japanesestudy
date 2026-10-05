@@ -14,6 +14,7 @@
     "generate:kanji-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_kanji_audio.py",
     "generate:listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_listening_audio.py",
     "generate:passive-listening-audio": "PYTHONPATH=apps/api .venv/bin/python apps/api/scripts/generate_passive_listening_audio.py",
+    "generate:spanish-audio": "node scripts/generate-spanish-audio.ts",
     "lint": "npm --workspace apps/web run lint",
     "test": "npm --workspace apps/web run test && PYTHONPATH=apps/api .venv/bin/pytest apps/api/tests",
     "format": "prettier --write ."

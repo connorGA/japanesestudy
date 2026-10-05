@@ -17,6 +17,7 @@ import {
   PROGRESS_EVENT,
   readProgress,
   STUDY_ACTIVITY_POINTS,
+  STUDY_LANGUAGES,
   type ProgressStore,
   type StudyLanguage,
 } from "@/lib/progress";
@@ -46,9 +47,33 @@ const languageCards = [
     accent: "#26734f",
     tint: "bg-[#f2f9f4]",
     hover: "group-hover:border-[#26734f]/35",
+    badge: "Continue learning",
+  },
+  {
+    id: "spanish" as const,
+    href: "/spanish",
+    name: "Spanish",
+    nativeName: "Español",
+    country: "Mexico & Latin America",
+    description: "Mexican pronunciation, slang, grammar, verbs, conversation, native-voice listening, and vocabulary.",
+    accent: "#b74c2a",
+    tint: "bg-[#fff1e0]",
+    hover: "group-hover:border-[#b74c2a]/35",
     badge: "New language",
   },
 ];
+
+const heatmapStyles: Record<StudyLanguage, { name: string; glow: string; artGlow: string; art: string }> = {
+  japanese: { name: "Japanese", glow: "bg-[#f8dfe4]/55", artGlow: "bg-[#fff4f4]/80", art: "/dashboard/japanese-heatmap-art.png" },
+  italian: { name: "Italian", glow: "bg-[#dcefe4]/65", artGlow: "bg-[#f1f7ee]/90", art: "/dashboard/italian-heatmap-art.png" },
+  spanish: { name: "Spanish", glow: "bg-[#fbe2c4]/65", artGlow: "bg-[#fff4e6]/90", art: "/dashboard/spanish-heatmap-art.png" },
+};
+
+const flagLabels: Record<StudyLanguage, string> = {
+  japanese: "Flag of Japan",
+  italian: "Flag of Italy",
+  spanish: "Flag of Mexico",
+};
 
 export function LanguageDashboard() {
   const [progress, setProgress] = useState<ProgressStore>(emptyProgress);
@@ -65,16 +90,15 @@ export function LanguageDashboard() {
   }, []);
 
   const totals = useMemo(
-    () => ({
-      japanese: sum(Object.values(progress.japanese)),
-      italian: sum(Object.values(progress.italian)),
-    }),
+    () => Object.fromEntries(
+      STUDY_LANGUAGES.map((language) => [language, sum(Object.values(progress[language]))]),
+    ) as Record<StudyLanguage, number>,
     [progress],
   );
   const combined = useMemo(() => combineProgress(progress), [progress]);
   const streak = calculateStreak(combined);
   const activeDays = Object.values(combined).filter((value) => value > 0).length;
-  const totalPoints = totals.japanese + totals.italian;
+  const totalPoints = sum(Object.values(totals));
 
   return (
     <main className="theme-dashboard relative min-h-[calc(100svh-5rem)] px-4 pb-14 sm:px-6 lg:px-10 lg:pb-20">
@@ -113,7 +137,7 @@ export function LanguageDashboard() {
             <p className="max-w-sm text-sm leading-6 text-slate-500">Choose a country and continue from your latest practice.</p>
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {languageCards.map((language, index) => (
               <Link
                 className={twMerge(
@@ -186,8 +210,9 @@ function FlagHeatmaps({ progress }: { progress: ProgressStore }) {
       </div>
 
       <div className="mt-6 grid gap-4">
-        <LanguageHeatmap language="japanese" records={progress.japanese} />
-        <LanguageHeatmap language="italian" records={progress.italian} />
+        {STUDY_LANGUAGES.map((language) => (
+          <LanguageHeatmap key={language} language={language} records={progress[language]} />
+        ))}
       </div>
     </section>
   );
@@ -204,14 +229,14 @@ function PointGuide({ label, points }: { label: string; points: number }) {
 function LanguageHeatmap({ language, records }: { language: StudyLanguage; records: Record<string, number> }) {
   const days = useMemo(() => buildHeatmapDays(records), [records]);
   const activeCount = days.filter((day) => day.count > 0).length;
-  const isJapanese = language === "japanese";
+  const style = heatmapStyles[language];
 
   return (
     <article className="relative overflow-hidden rounded-[1.75rem] border border-black/[0.07] bg-white/85 p-5 shadow-sm backdrop-blur-md sm:p-6">
       <div
         className={twMerge(
           "pointer-events-none absolute -right-24 -top-32 h-80 w-80 rounded-full blur-3xl",
-          isJapanese ? "bg-[#f8dfe4]/55" : "bg-[#dcefe4]/65",
+          style.glow,
         )}
       />
 
@@ -220,7 +245,7 @@ function LanguageHeatmap({ language, records }: { language: StudyLanguage; recor
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <CountryFlag country={language} className="h-8 w-12 rounded-md shadow-sm" />
-              <div><h3 className="font-bold text-ink">{isJapanese ? "Japanese" : "Italian"}</h3><p className="text-xs text-slate-500">{activeCount} active {activeCount === 1 ? "day" : "days"} in the last year</p></div>
+              <div><h3 className="font-bold text-ink">{style.name}</h3><p className="text-xs text-slate-500">{activeCount} active {activeCount === 1 ? "day" : "days"} in the last year</p></div>
             </div>
             <span className="text-xs font-semibold tabular-nums text-slate-400">{sum(Object.values(records))} pts</span>
           </div>
@@ -230,7 +255,7 @@ function LanguageHeatmap({ language, records }: { language: StudyLanguage; recor
               <div className="grid grid-rows-7 gap-[3px] pt-[1px] text-[9px] leading-[13px] text-slate-400" aria-hidden="true">
                 <span /><span>Mon</span><span /><span>Wed</span><span /><span>Fri</span><span />
               </div>
-              <div className="grid min-w-[52rem] flex-1 auto-cols-[13px] grid-flow-col grid-rows-7 gap-[3px]" aria-label={`${isJapanese ? "Japanese" : "Italian"} study contribution heatmap`}>
+              <div className="grid min-w-[52rem] flex-1 auto-cols-[13px] grid-flow-col grid-rows-7 gap-[3px]" aria-label={`${style.name} study contribution heatmap`}>
                 {days.map((day) => (
                   <FlagSquare count={day.count} date={day.date} key={day.key} language={language} />
                 ))}
@@ -247,13 +272,13 @@ function LanguageHeatmap({ language, records }: { language: StudyLanguage; recor
         </div>
 
         <div className="relative hidden min-h-[15.5rem] xl:block">
-          <div className={twMerge("absolute inset-4 rounded-full blur-2xl", isJapanese ? "bg-[#fff4f4]/80" : "bg-[#f1f7ee]/90")} />
+          <div className={twMerge("absolute inset-4 rounded-full blur-2xl", style.artGlow)} />
           <Image
             alt=""
             className="object-contain object-center drop-shadow-[0_18px_18px_rgba(35,41,58,0.14)]"
             fill
             sizes="(min-width: 1280px) 330px, 0px"
-            src={isJapanese ? "/dashboard/japanese-heatmap-art.png" : "/dashboard/italian-heatmap-art.png"}
+            src={style.art}
           />
           <div className="absolute inset-x-10 bottom-2 h-px bg-gradient-to-r from-transparent via-slate-300/60 to-transparent" />
         </div>
@@ -271,17 +296,32 @@ function FlagSquare({ count, date, language }: { count: number; date: Date; lang
 function FlagPixel({ language, opacity, className, title }: { language: StudyLanguage; opacity: number; className?: string; title?: string }) {
   return (
     <span aria-label={title} className={twMerge("relative overflow-hidden rounded-[3px] border border-black/10 bg-white shadow-[inset_0_0_0_0.5px_rgba(255,255,255,.45)]", className)} style={{ opacity }} title={title}>
-      {language === "japanese" ? <span className="absolute left-1/2 top-1/2 h-[48%] w-[48%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#bc3d4d]" /> : <span className="absolute inset-0 bg-[linear-gradient(90deg,#258153_0_33.33%,#fff_33.33%_66.66%,#c84848_66.66%)]" />}
+      <FlagFace language={language} />
     </span>
   );
 }
 
 function CountryFlag({ country, className }: { country: StudyLanguage; className?: string }) {
   return (
-    <span aria-label={country === "japanese" ? "Flag of Japan" : "Flag of Italy"} className={twMerge("relative block overflow-hidden border border-black/10 bg-white", className)} role="img">
-      {country === "japanese" ? <span className="absolute left-1/2 top-1/2 aspect-square h-[48%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#bc3d4d]" /> : <span className="absolute inset-0 bg-[linear-gradient(90deg,#258153_0_33.33%,#fff_33.33%_66.66%,#c84848_66.66%)]" />}
+    <span aria-label={flagLabels[country]} className={twMerge("relative block overflow-hidden border border-black/10 bg-white", className)} role="img">
+      <FlagFace language={country} />
     </span>
   );
+}
+
+function FlagFace({ language }: { language: StudyLanguage }) {
+  if (language === "japanese") {
+    return <span className="absolute left-1/2 top-1/2 aspect-square h-[48%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#bc3d4d]" />;
+  }
+  if (language === "spanish") {
+    return (
+      <>
+        <span className="absolute inset-0 bg-[linear-gradient(90deg,#006847_0_33.33%,#fff_33.33%_66.66%,#ce1126_66.66%)]" />
+        <span className="absolute left-1/2 top-1/2 aspect-square h-[30%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,#8c5a2b_0_45%,#5f8f3e_46%_70%,transparent_71%)]" />
+      </>
+    );
+  }
+  return <span className="absolute inset-0 bg-[linear-gradient(90deg,#258153_0_33.33%,#fff_33.33%_66.66%,#c84848_66.66%)]" />;
 }
 
 function buildHeatmapDays(records: Record<string, number>) {
@@ -302,7 +342,7 @@ function buildHeatmapDays(records: Record<string, number>) {
 
 function combineProgress(progress: ProgressStore) {
   const combined: Record<string, number> = {};
-  for (const language of ["japanese", "italian"] as const) {
+  for (const language of STUDY_LANGUAGES) {
     for (const [date, count] of Object.entries(progress[language])) combined[date] = (combined[date] ?? 0) + count;
   }
   return combined;

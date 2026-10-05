@@ -9,9 +9,11 @@ ReviewType = Literal["vocabulary", "grammar", "sentence", "listening"]
 ReviewRating = Literal["again", "hard", "good", "easy"]
 AudioStatus = Literal["pending", "ready", "failed"]
 FlashcardSection = Literal["vocabulary", "hiragana", "katakana", "kanji"]
-TutorLanguage = Literal["japanese", "italian"]
-StudyLanguage = Literal["japanese", "italian"]
+TutorLanguage = Literal["japanese", "italian", "spanish"]
+StudyLanguage = Literal["japanese", "italian", "spanish"]
 ListeningAudioLanguage = Literal["en", "it"]
+SpanishAudioLanguage = Literal["en", "es"]
+SpanishVoice = Literal["primary", "secondary"]
 StudyActivityType = Literal[
     "flashcard_retry",
     "flashcard_mastered",
@@ -143,6 +145,17 @@ class ItalianListeningAudioRequest(BaseModel):
 class ItalianListeningAudioItem(BaseModel):
     id: str
     audio: AudioAsset
+
+
+class SpanishAudioRequestItem(BaseModel):
+    id: str = Field(min_length=1, max_length=120)
+    text: str = Field(min_length=1, max_length=500)
+    language: SpanishAudioLanguage
+    voice: SpanishVoice = "primary"
+
+
+class SpanishAudioRequest(BaseModel):
+    items: list[SpanishAudioRequestItem] = Field(min_length=1, max_length=200)
 
 
 class TutorResponse(TutorPayload):

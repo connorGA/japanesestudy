@@ -5,10 +5,11 @@ from uuid import uuid4
 
 import httpx
 from fastapi import BackgroundTasks
-from supabase import Client, create_client
+from supabase import Client
 
 from app.config import Settings
 from app.models import AudioAsset
+from app.services.supabase_client import create_supabase_client
 
 
 def normalize_audio_text(text: str) -> str:
@@ -33,7 +34,9 @@ class AudioService:
         self._assets: dict[str, AudioAsset] = {}
         self._client: Optional[Client] = None
         if settings.supabase_url and settings.supabase_service_role_key:
-            self._client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+            self._client = create_supabase_client(
+                settings.supabase_url, settings.supabase_service_role_key
+            )
 
     def get_or_queue(
         self,
@@ -241,11 +244,17 @@ class AudioService:
                     pending_asset = existing.model_copy(
                         update={"status": "pending", "error_message": None}
                     )
-                    self._assets[cache_key] = pending_asset
                     if self._client:
-                        self._client.table("audio_assets").update(
-                            {"status": "pending", "error_message": None}
-                        ).eq("id", pending_asset.id).execute()
+                        try:
+                            self._client.table("audio_assets").update(
+                                {"status": "pending", "error_message": None}
+                            ).eq("id", pending_asset.id).execute()
+                        except Exception as err:
+                            assets[item] = existing.model_copy(
+                                update={"error_message": f"Could not load cached audio: {err}"}
+                            )
+                            continue
+                    self._assets[cache_key] = pending_asset
                     background_tasks.add_task(
                         self._generate_and_store,
                         pending_asset,
@@ -405,8 +414,15 @@ class AudioService:
         language_code: str,
     ) -> AudioAsset:
         asset = AudioAsset(id=str(uuid4()), text=text, status="pending")
+        try:
+            self._insert_pending(asset, cache_key, voice_id)
+        except Exception as err:
+            # Leave the key unregistered so the next request retries instead of
+            # seeing a pending asset that no task will ever generate.
+            return asset.model_copy(
+                update={"status": "failed", "error_message": f"Could not load cached audio: {err}"}
+            )
         self._assets[cache_key] = asset
-        self._insert_pending(asset, cache_key, voice_id)
 
         if background_tasks and self._settings.elevenlabs_api_key and voice_id:
             background_tasks.add_task(
@@ -462,7 +478,11 @@ class AudioService:
         except Exception as err:
             failed_asset = asset.model_copy(update={"status": "failed", "error_message": str(err)})
             self._assets[cache_key] = failed_asset
-            self._mark_failed(asset.id, str(err))
+            try:
+                self._mark_failed(asset.id, str(err))
+            except Exception:
+                # Background tasks run in sequence; raising here would strand the rest of the queue.
+                pass
 
     async def _generate_audio_bytes(
         self,

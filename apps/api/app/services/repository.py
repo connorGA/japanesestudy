@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, NAMESPACE_URL, uuid4, uuid5
 
-from supabase import Client, create_client
+from supabase import Client
 
 from app.config import Settings
 from app.models import (
@@ -15,13 +15,16 @@ from app.models import (
     ReviewItem,
     TutorPayload,
 )
+from app.services.supabase_client import create_supabase_client
 
 
 class StudyRepository:
     def __init__(self, settings: Settings) -> None:
         self._client: Optional[Client] = None
         if settings.supabase_url and settings.supabase_service_role_key:
-            self._client = create_client(settings.supabase_url, settings.supabase_service_role_key)
+            self._client = create_supabase_client(
+                settings.supabase_url, settings.supabase_service_role_key
+            )
 
         self._sessions: set[str] = set()
         self._reviews: dict[str, ReviewItem] = {}

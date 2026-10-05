@@ -14,7 +14,7 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8005";
 
-export type StudyLanguage = "japanese" | "italian";
+export type StudyLanguage = "japanese" | "italian" | "spanish";
 export type StudyActivity =
   | "flashcard_retry"
   | "flashcard_mastered"
@@ -81,7 +81,7 @@ export type RealtimeTutorToken = {
 
 export function createRealtimeTutorSession(
   clientId: string,
-  language: "japanese" | "italian" = "japanese",
+  language: StudyLanguage = "japanese",
 ): Promise<RealtimeTutorToken> {
   return request<RealtimeTutorToken>("/api/tutor/realtime/session", {
     method: "POST",
@@ -118,6 +118,22 @@ export function getItalianListeningAudio(
   items: Array<{ id: string; text: string; language: "en" | "it" }>,
 ): Promise<ItalianListeningAudioItem[]> {
   return request<ItalianListeningAudioItem[]>("/api/italian/listening/audio", {
+    method: "POST",
+    body: JSON.stringify({ items }),
+  });
+}
+
+export type SpanishAudioRequestItem = {
+  id: string;
+  text: string;
+  language: "en" | "es";
+  voice?: "primary" | "secondary";
+};
+
+export function getSpanishAudio(
+  items: SpanishAudioRequestItem[],
+): Promise<ItalianListeningAudioItem[]> {
+  return request<ItalianListeningAudioItem[]>("/api/spanish/audio", {
     method: "POST",
     body: JSON.stringify({ items }),
   });

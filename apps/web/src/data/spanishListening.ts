@@ -1,0 +1,413 @@
+export type SpanishListeningCategoryId =
+  | "food"
+  | "greetings"
+  | "travel"
+  | "daily-life"
+  | "survival-phrases"
+  | "numbers-time"
+  | "people-family"
+  | "verbs-actions"
+  | "places"
+  | "adjectives";
+
+export type SpanishListeningItem = {
+  id: string;
+  english: string;
+  spanish: string;
+};
+
+export type SpanishListeningCategory = {
+  id: SpanishListeningCategoryId;
+  title: string;
+  description: string;
+  items: SpanishListeningItem[];
+};
+
+export type SpanishListeningScenario = {
+  id: string;
+  title: string;
+  setting: string;
+  level: string;
+  description: string;
+  lines: Array<{ speaker: string; spanish: string; english: string }>;
+};
+
+/** Alternates the two native Mexican voices by order of first appearance in a dialogue. */
+export function scenarioSpeakerVoice(scenario: SpanishListeningScenario, speaker: string): "primary" | "secondary" {
+  const speakers = Array.from(new Set(scenario.lines.map((line) => line.speaker)));
+  return speakers.indexOf(speaker) % 2 === 1 ? "secondary" : "primary";
+}
+
+export const spanishListeningCategories: SpanishListeningCategory[] = [
+  {
+    id: "food",
+    title: "Food",
+    description: "Mexican staples, market finds, and restaurant words.",
+    items: [
+      { id: "water", english: "water", spanish: "el agua" },
+      { id: "tortilla", english: "corn tortilla", spanish: "la tortilla de maíz" },
+      { id: "beans", english: "beans", spanish: "los frijoles" },
+      { id: "rice", english: "rice", spanish: "el arroz" },
+      { id: "chicken", english: "chicken", spanish: "el pollo" },
+      { id: "beef", english: "beef", spanish: "la carne de res" },
+      { id: "cheese", english: "cheese", spanish: "el queso" },
+      { id: "avocado", english: "avocado", spanish: "el aguacate" },
+      { id: "corn", english: "corn on the cob", spanish: "el elote" },
+      { id: "sauce", english: "hot sauce", spanish: "la salsa picante" },
+      { id: "lime", english: "lime", spanish: "el limón" },
+      { id: "bread", english: "sweet bread", spanish: "el pan dulce" },
+      { id: "coffee", english: "coffee", spanish: "el café de olla" },
+      { id: "fruit", english: "fruit", spanish: "la fruta" },
+      { id: "spicy", english: "Is it spicy?", spanish: "¿Pica?" },
+      { id: "not-spicy", english: "Not too spicy, please.", spanish: "Que no pique mucho, por favor." },
+      { id: "delicious", english: "It's delicious!", spanish: "¡Está riquísimo!" },
+      { id: "to-go", english: "To go, please.", spanish: "Para llevar, por favor." },
+    ],
+  },
+  {
+    id: "greetings",
+    title: "Greetings",
+    description: "Everyday hellos, goodbyes, and polite basics.",
+    items: [
+      { id: "hello", english: "hello", spanish: "hola" },
+      { id: "good-morning", english: "good morning", spanish: "buenos días" },
+      { id: "good-afternoon", english: "good afternoon", spanish: "buenas tardes" },
+      { id: "good-night", english: "good evening / good night", spanish: "buenas noches" },
+      { id: "how-are-you", english: "How are you?", spanish: "¿Cómo estás?" },
+      { id: "how-are-you-formal", english: "How are you? (formal)", spanish: "¿Cómo está usted?" },
+      { id: "fine-thanks", english: "Fine, thanks. And you?", spanish: "Bien, gracias. ¿Y tú?" },
+      { id: "whats-up", english: "What's up?", spanish: "¿Qué onda?" },
+      { id: "nice-to-meet", english: "Nice to meet you.", spanish: "Mucho gusto." },
+      { id: "likewise", english: "Likewise.", spanish: "Igualmente." },
+      { id: "my-name", english: "My name is Alex.", spanish: "Me llamo Alex." },
+      { id: "welcome", english: "Welcome!", spanish: "¡Bienvenidos!" },
+      { id: "see-you", english: "See you!", spanish: "¡Nos vemos!" },
+      { id: "see-you-tomorrow", english: "See you tomorrow.", spanish: "Hasta mañana." },
+      { id: "take-care", english: "Take care.", spanish: "Cuídate." },
+      { id: "have-a-good-day", english: "Have a good day.", spanish: "Que te vaya bien." },
+      { id: "thank-you", english: "thank you", spanish: "gracias" },
+    ],
+  },
+  {
+    id: "travel",
+    title: "Travel",
+    description: "Buses, flights, hotels, and getting around Mexico.",
+    items: [
+      { id: "airport", english: "airport", spanish: "el aeropuerto" },
+      { id: "flight", english: "flight", spanish: "el vuelo" },
+      { id: "passport", english: "passport", spanish: "el pasaporte" },
+      { id: "suitcase", english: "suitcase", spanish: "la maleta" },
+      { id: "ticket", english: "ticket", spanish: "el boleto" },
+      { id: "round-trip", english: "round-trip ticket", spanish: "el boleto redondo" },
+      { id: "bus", english: "city bus", spanish: "el camión" },
+      { id: "bus-station", english: "bus station", spanish: "la central de autobuses" },
+      { id: "subway", english: "subway", spanish: "el metro" },
+      { id: "taxi", english: "taxi", spanish: "el taxi" },
+      { id: "hotel", english: "hotel", spanish: "el hotel" },
+      { id: "reservation", english: "reservation", spanish: "la reservación" },
+      { id: "map", english: "map", spanish: "el mapa" },
+      { id: "where-stop", english: "Where is the stop?", spanish: "¿Dónde está la parada?" },
+      { id: "what-time-leave", english: "What time does it leave?", spanish: "¿A qué hora sale?" },
+      { id: "how-long", english: "How long does it take?", spanish: "¿Cuánto tiempo se tarda?" },
+      { id: "im-lost", english: "I'm lost.", spanish: "Estoy perdido." },
+    ],
+  },
+  {
+    id: "daily-life",
+    title: "Daily Life",
+    description: "Routine words and phrases for home, work, and errands.",
+    items: [
+      { id: "wake-up", english: "I wake up early.", spanish: "Me despierto temprano." },
+      { id: "shower", english: "I take a shower.", spanish: "Me baño." },
+      { id: "breakfast", english: "breakfast", spanish: "el desayuno" },
+      { id: "lunch", english: "lunch (main meal)", spanish: "la comida" },
+      { id: "dinner", english: "dinner", spanish: "la cena" },
+      { id: "work", english: "I'm going to work.", spanish: "Me voy al trabajo." },
+      { id: "home", english: "I'm home.", spanish: "Ya llegué a la casa." },
+      { id: "phone", english: "cell phone", spanish: "el celular" },
+      { id: "keys", english: "keys", spanish: "las llaves" },
+      { id: "wallet", english: "wallet", spanish: "la cartera" },
+      { id: "laundry", english: "I do the laundry.", spanish: "Lavo la ropa." },
+      { id: "groceries", english: "I buy groceries.", spanish: "Hago el súper." },
+      { id: "cook", english: "I cook dinner.", spanish: "Preparo la cena." },
+      { id: "tired", english: "I'm tired.", spanish: "Estoy cansado." },
+      { id: "sleep", english: "I go to bed.", spanish: "Me duermo." },
+      { id: "weekend", english: "weekend", spanish: "el fin de semana" },
+      { id: "busy-day", english: "I have a busy day.", spanish: "Tengo un día muy ocupado." },
+    ],
+  },
+  {
+    id: "survival-phrases",
+    title: "Survival Phrases",
+    description: "Phrases that rescue you when you're stuck.",
+    items: [
+      { id: "dont-understand", english: "I don't understand.", spanish: "No entiendo." },
+      { id: "slower", english: "More slowly, please.", spanish: "Más despacio, por favor." },
+      { id: "repeat", english: "Can you repeat that?", spanish: "¿Me lo puede repetir?" },
+      { id: "pardon", english: "Pardon?", spanish: "¿Mande?" },
+      { id: "speak-english", english: "Do you speak English?", spanish: "¿Habla inglés?" },
+      { id: "how-say", english: "How do you say this in Spanish?", spanish: "¿Cómo se dice esto en español?" },
+      { id: "what-mean", english: "What does that mean?", spanish: "¿Qué significa eso?" },
+      { id: "bathroom", english: "Where is the restroom?", spanish: "¿Dónde está el baño?" },
+      { id: "help", english: "Help!", spanish: "¡Ayuda!" },
+      { id: "doctor", english: "I need a doctor.", spanish: "Necesito un doctor." },
+      { id: "pharmacy", english: "Is there a pharmacy nearby?", spanish: "¿Hay una farmacia cerca?" },
+      { id: "how-much", english: "How much is it?", spanish: "¿Cuánto cuesta?" },
+      { id: "card", english: "Do you take cards?", spanish: "¿Aceptan tarjeta?" },
+      { id: "cash", english: "I only have cash.", spanish: "Solo tengo efectivo." },
+      { id: "excuse-me", english: "Excuse me.", spanish: "Disculpe." },
+      { id: "sorry", english: "I'm sorry.", spanish: "Lo siento." },
+      { id: "excuse-pass", english: "Excuse me, may I pass?", spanish: "Con permiso." },
+    ],
+  },
+  {
+    id: "numbers-time",
+    title: "Numbers and Time",
+    description: "Count, tell time, and talk about days.",
+    items: [
+      { id: "one", english: "one", spanish: "uno" },
+      { id: "two", english: "two", spanish: "dos" },
+      { id: "three", english: "three", spanish: "tres" },
+      { id: "five", english: "five", spanish: "cinco" },
+      { id: "ten", english: "ten", spanish: "diez" },
+      { id: "fifteen", english: "fifteen", spanish: "quince" },
+      { id: "twenty", english: "twenty", spanish: "veinte" },
+      { id: "fifty", english: "fifty", spanish: "cincuenta" },
+      { id: "hundred", english: "one hundred", spanish: "cien" },
+      { id: "what-time", english: "What time is it?", spanish: "¿Qué hora es?" },
+      { id: "one-oclock", english: "It's one o'clock.", spanish: "Es la una." },
+      { id: "three-thirty", english: "It's three thirty.", spanish: "Son las tres y media." },
+      { id: "quarter-to", english: "It's a quarter to eight.", spanish: "Son cuarto para las ocho." },
+      { id: "today", english: "today", spanish: "hoy" },
+      { id: "tomorrow", english: "tomorrow", spanish: "mañana" },
+      { id: "yesterday", english: "yesterday", spanish: "ayer" },
+      { id: "monday", english: "Monday", spanish: "el lunes" },
+      { id: "weekend", english: "this weekend", spanish: "este fin de semana" },
+    ],
+  },
+  {
+    id: "people-family",
+    title: "People and Family",
+    description: "Family members and the people in your life.",
+    items: [
+      { id: "mom", english: "mom", spanish: "mi mamá" },
+      { id: "dad", english: "dad", spanish: "mi papá" },
+      { id: "parents", english: "parents", spanish: "mis papás" },
+      { id: "brother", english: "brother", spanish: "mi hermano" },
+      { id: "sister", english: "sister", spanish: "mi hermana" },
+      { id: "son", english: "son", spanish: "mi hijo" },
+      { id: "daughter", english: "daughter", spanish: "mi hija" },
+      { id: "grandma", english: "grandma", spanish: "mi abuelita" },
+      { id: "grandpa", english: "grandpa", spanish: "mi abuelito" },
+      { id: "cousin", english: "cousin", spanish: "mi primo" },
+      { id: "husband", english: "husband", spanish: "mi esposo" },
+      { id: "wife", english: "wife", spanish: "mi esposa" },
+      { id: "boyfriend", english: "boyfriend", spanish: "mi novio" },
+      { id: "friend", english: "friend", spanish: "mi amigo" },
+      { id: "neighbor", english: "neighbor", spanish: "mi vecina" },
+      { id: "coworker", english: "coworker", spanish: "mi compañero de trabajo" },
+      { id: "kids", english: "children", spanish: "los niños" },
+    ],
+  },
+  {
+    id: "verbs-actions",
+    title: "Verbs and Actions",
+    description: "Everyday verbs in short, useful sentences.",
+    items: [
+      { id: "eat", english: "I eat.", spanish: "Como." },
+      { id: "drink", english: "I drink coffee.", spanish: "Tomo café." },
+      { id: "speak", english: "I speak a little Spanish.", spanish: "Hablo un poco de español." },
+      { id: "want", english: "I want to go.", spanish: "Quiero ir." },
+      { id: "can", english: "Can you help me?", spanish: "¿Me puedes ayudar?" },
+      { id: "need", english: "I need to rest.", spanish: "Necesito descansar." },
+      { id: "like", english: "I like it.", spanish: "Me gusta." },
+      { id: "going-to", english: "I'm going to study.", spanish: "Voy a estudiar." },
+      { id: "chat", english: "We're chatting.", spanish: "Estamos platicando." },
+      { id: "drive", english: "I drive to work.", spanish: "Manejo al trabajo." },
+      { id: "buy", english: "I want to buy this.", spanish: "Quiero comprar esto." },
+      { id: "walk", english: "Let's walk.", spanish: "Vamos a caminar." },
+      { id: "wait", english: "Wait a moment.", spanish: "Espera un momento." },
+      { id: "know", english: "I don't know.", spanish: "No sé." },
+      { id: "think", english: "I think so.", spanish: "Creo que sí." },
+      { id: "arrive", english: "We arrived yesterday.", spanish: "Llegamos ayer." },
+      { id: "leave", english: "I'm leaving now.", spanish: "Ya me voy." },
+    ],
+  },
+  {
+    id: "places",
+    title: "Places",
+    description: "Around town, from the plaza to the market.",
+    items: [
+      { id: "downtown", english: "downtown", spanish: "el centro" },
+      { id: "main-square", english: "main square", spanish: "el zócalo" },
+      { id: "market", english: "market", spanish: "el mercado" },
+      { id: "church", english: "church", spanish: "la iglesia" },
+      { id: "museum", english: "museum", spanish: "el museo" },
+      { id: "park", english: "park", spanish: "el parque" },
+      { id: "beach", english: "beach", spanish: "la playa" },
+      { id: "bank", english: "bank", spanish: "el banco" },
+      { id: "atm", english: "ATM", spanish: "el cajero automático" },
+      { id: "corner-store", english: "corner store", spanish: "la tiendita" },
+      { id: "supermarket", english: "supermarket", spanish: "el supermercado" },
+      { id: "hospital", english: "hospital", spanish: "el hospital" },
+      { id: "school", english: "school", spanish: "la escuela" },
+      { id: "office", english: "office", spanish: "la oficina" },
+      { id: "restaurant", english: "restaurant", spanish: "el restaurante" },
+      { id: "taco-stand", english: "taco stand", spanish: "el puesto de tacos" },
+      { id: "block", english: "two blocks away", spanish: "a dos cuadras" },
+    ],
+  },
+  {
+    id: "adjectives",
+    title: "Descriptions",
+    description: "Adjectives to describe people, places, and things.",
+    items: [
+      { id: "big", english: "big", spanish: "grande" },
+      { id: "small", english: "small", spanish: "chiquito" },
+      { id: "pretty", english: "pretty", spanish: "bonito" },
+      { id: "new", english: "new", spanish: "nuevo" },
+      { id: "old", english: "old", spanish: "viejo" },
+      { id: "hot", english: "hot (weather)", spanish: "Hace calor." },
+      { id: "cold", english: "cold (weather)", spanish: "Hace frío." },
+      { id: "cheap", english: "cheap", spanish: "barato" },
+      { id: "expensive", english: "expensive", spanish: "caro" },
+      { id: "easy", english: "easy", spanish: "fácil" },
+      { id: "difficult", english: "difficult", spanish: "difícil" },
+      { id: "fast", english: "fast", spanish: "rápido" },
+      { id: "slow", english: "slow", spanish: "lento" },
+      { id: "near", english: "near", spanish: "cerca" },
+      { id: "far", english: "far", spanish: "lejos" },
+      { id: "tasty", english: "tasty", spanish: "sabroso" },
+      { id: "cool", english: "cool (slang)", spanish: "chido" },
+    ],
+  },
+];
+
+export const spanishListeningScenarios: SpanishListeningScenario[] = [
+  {
+    id: "taqueria",
+    title: "At the taquería",
+    setting: "Street taco stand, Mexico City",
+    level: "Beginner",
+    description: "Order tacos, choose your salsa, and pay.",
+    lines: [
+      { speaker: "Taquero", spanish: "¡Buenas noches, joven! ¿Qué le damos?", english: "Good evening! What can we get you?" },
+      { speaker: "You", spanish: "Me da cuatro tacos al pastor, por favor.", english: "Can I have four al pastor tacos, please?" },
+      { speaker: "Taquero", spanish: "¿Con todo? ¿Cebolla y cilantro?", english: "With everything? Onion and cilantro?" },
+      { speaker: "You", spanish: "Sí, con todo. ¿La salsa verde pica mucho?", english: "Yes, with everything. Is the green salsa very spicy?" },
+      { speaker: "Taquero", spanish: "Pica poquito. La roja sí pica más.", english: "It's a little spicy. The red one is spicier." },
+      { speaker: "You", spanish: "Perfecto. ¿Cuánto le debo?", english: "Perfect. How much do I owe you?" },
+      { speaker: "Taquero", spanish: "Son ochenta pesos.", english: "That's eighty pesos." },
+    ],
+  },
+  {
+    id: "mercado",
+    title: "Shopping at the market",
+    setting: "Mercado de Coyoacán",
+    level: "Beginner",
+    description: "Buy fruit, ask prices, and get a little extra.",
+    lines: [
+      { speaker: "Vendor", spanish: "¿Qué va a llevar, güerita?", english: "What are you going to take, miss?" },
+      { speaker: "You", spanish: "¿A cómo están los mangos?", english: "How much are the mangoes?" },
+      { speaker: "Vendor", spanish: "A cuarenta el kilo. Están bien dulces.", english: "Forty a kilo. They're really sweet." },
+      { speaker: "You", spanish: "Deme un kilo, por favor. Y medio de aguacates.", english: "Give me a kilo, please. And half a kilo of avocados." },
+      { speaker: "Vendor", spanish: "¿Para hoy o para mañana?", english: "For today or for tomorrow?" },
+      { speaker: "You", spanish: "Para hoy, para hacer guacamole.", english: "For today, to make guacamole." },
+      { speaker: "Vendor", spanish: "Ándale. Le pongo un limón de pilón.", english: "Alright. I'll throw in a lime for free." },
+    ],
+  },
+  {
+    id: "metro",
+    title: "Taking the Metro",
+    setting: "Metro station, Mexico City",
+    level: "Beginner",
+    description: "Ask which line to take and where to transfer.",
+    lines: [
+      { speaker: "You", spanish: "Disculpe, ¿cómo llego a Bellas Artes?", english: "Excuse me, how do I get to Bellas Artes?" },
+      { speaker: "Local", spanish: "Tome la línea dos, dirección Cuatro Caminos.", english: "Take line two, toward Cuatro Caminos." },
+      { speaker: "You", spanish: "¿Tengo que transbordar?", english: "Do I have to transfer?" },
+      { speaker: "Local", spanish: "No, es directo. Son como seis estaciones.", english: "No, it's direct. It's about six stations." },
+      { speaker: "You", spanish: "¿Y dónde compro la tarjeta?", english: "And where do I buy the card?" },
+      { speaker: "Local", spanish: "Ahí en la taquilla, junto a las escaleras.", english: "Right there at the ticket booth, next to the stairs." },
+    ],
+  },
+  {
+    id: "autobus",
+    title: "Bus ticket to Oaxaca",
+    setting: "Bus station ticket counter",
+    level: "A1–A2",
+    description: "Buy a long-distance bus ticket and choose a seat.",
+    lines: [
+      { speaker: "Agent", spanish: "Buenas tardes, ¿a dónde viaja?", english: "Good afternoon, where are you traveling to?" },
+      { speaker: "You", spanish: "A Oaxaca. ¿A qué hora sale el próximo autobús?", english: "To Oaxaca. What time does the next bus leave?" },
+      { speaker: "Agent", spanish: "Hay uno a las cuatro y otro a las once de la noche.", english: "There's one at four and another at eleven at night." },
+      { speaker: "You", spanish: "El de las once, por favor. Un boleto sencillo.", english: "The eleven o'clock one, please. A one-way ticket." },
+      { speaker: "Agent", spanish: "¿Prefiere ventana o pasillo?", english: "Do you prefer window or aisle?" },
+      { speaker: "You", spanish: "Ventana, por favor. ¿Cuánto tarda el viaje?", english: "Window, please. How long is the trip?" },
+      { speaker: "Agent", spanish: "Son como seis horas. Llega temprano en la mañana.", english: "It's about six hours. It arrives early in the morning." },
+    ],
+  },
+  {
+    id: "new-friend",
+    title: "Making a new friend",
+    setting: "Café in Guadalajara",
+    level: "Beginner",
+    description: "Introduce yourself and make plans casually.",
+    lines: [
+      { speaker: "Mariana", spanish: "¡Hola! ¿Eres nuevo por aquí?", english: "Hi! Are you new around here?" },
+      { speaker: "You", spanish: "Sí, llegué la semana pasada. Me llamo Alex.", english: "Yes, I arrived last week. My name is Alex." },
+      { speaker: "Mariana", spanish: "Mucho gusto, Alex. Yo soy Mariana. ¿De dónde eres?", english: "Nice to meet you, Alex. I'm Mariana. Where are you from?" },
+      { speaker: "You", spanish: "Soy de Chicago. Estoy aprendiendo español.", english: "I'm from Chicago. I'm learning Spanish." },
+      { speaker: "Mariana", spanish: "¡Qué padre! Hablas muy bien.", english: "How awesome! You speak really well." },
+      { speaker: "You", spanish: "Gracias. ¿Quieres tomar un café el sábado?", english: "Thanks. Do you want to grab a coffee on Saturday?" },
+      { speaker: "Mariana", spanish: "Sale, ¡nos vemos el sábado!", english: "Deal, see you Saturday!" },
+    ],
+  },
+  {
+    id: "hotel",
+    title: "Hotel check-in",
+    setting: "Boutique hotel, Oaxaca",
+    level: "A1–A2",
+    description: "Check in, ask about breakfast, and get the Wi-Fi.",
+    lines: [
+      { speaker: "Receptionist", spanish: "Bienvenido. ¿Tiene una reservación?", english: "Welcome. Do you have a reservation?" },
+      { speaker: "You", spanish: "Sí, a nombre de Taylor, por tres noches.", english: "Yes, under Taylor, for three nights." },
+      { speaker: "Receptionist", spanish: "Perfecto. ¿Me permite su pasaporte, por favor?", english: "Perfect. May I have your passport, please?" },
+      { speaker: "You", spanish: "Claro, aquí tiene. ¿El desayuno está incluido?", english: "Of course, here you go. Is breakfast included?" },
+      { speaker: "Receptionist", spanish: "Sí, es de siete a once en la terraza.", english: "Yes, it's from seven to eleven on the terrace." },
+      { speaker: "You", spanish: "¿Y cuál es la contraseña del wifi?", english: "And what's the Wi-Fi password?" },
+      { speaker: "Receptionist", spanish: "Está en la tarjeta con su llave. ¡Que disfrute su estancia!", english: "It's on the card with your key. Enjoy your stay!" },
+    ],
+  },
+  {
+    id: "farmacia",
+    title: "At the pharmacy",
+    setting: "Neighborhood pharmacy",
+    level: "A1–A2",
+    description: "Describe symptoms and get something for a cold.",
+    lines: [
+      { speaker: "Pharmacist", spanish: "Buenos días, ¿en qué le puedo ayudar?", english: "Good morning, how can I help you?" },
+      { speaker: "You", spanish: "Tengo gripa y me duele la garganta.", english: "I have a cold and my throat hurts." },
+      { speaker: "Pharmacist", spanish: "¿Tiene fiebre?", english: "Do you have a fever?" },
+      { speaker: "You", spanish: "Un poquito, desde ayer en la noche.", english: "A little, since last night." },
+      { speaker: "Pharmacist", spanish: "Le recomiendo estas pastillas. Tome una cada ocho horas.", english: "I recommend these tablets. Take one every eight hours." },
+      { speaker: "You", spanish: "Muy bien. ¿Algo más?", english: "Very good. Anything else?" },
+      { speaker: "Pharmacist", spanish: "Tome mucha agua y descanse. Si no mejora, vaya al doctor.", english: "Drink lots of water and rest. If you don't improve, go to the doctor." },
+    ],
+  },
+  {
+    id: "directions",
+    title: "Asking directions",
+    setting: "Historic center, Puebla",
+    level: "Beginner",
+    description: "Find the cathedral using blocks, corners, and turns.",
+    lines: [
+      { speaker: "You", spanish: "Perdón, ¿me puede decir cómo llegar a la catedral?", english: "Sorry, can you tell me how to get to the cathedral?" },
+      { speaker: "Local", spanish: "Claro. Siga todo derecho tres cuadras.", english: "Sure. Keep going straight for three blocks." },
+      { speaker: "Local", spanish: "En la esquina del banco, dé vuelta a la izquierda.", english: "At the corner with the bank, turn left." },
+      { speaker: "You", spanish: "¿Está lejos para ir caminando?", english: "Is it far to walk?" },
+      { speaker: "Local", spanish: "No, está aquí cerquita. Como diez minutos.", english: "No, it's really close. About ten minutes." },
+      { speaker: "You", spanish: "Muchísimas gracias. Muy amable.", english: "Thank you so much. Very kind of you." },
+    ],
+  },
+];

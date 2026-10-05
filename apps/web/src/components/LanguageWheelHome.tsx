@@ -6,9 +6,13 @@ import {
   Gamepad2,
   Languages,
   MessageCircle,
+  PartyPopper,
   TableProperties,
   Volume2,
 } from "lucide-react";
+import { PapelPicado } from "@/components/PapelPicado";
+
+type WheelLanguage = "japanese" | "italian" | "spanish";
 
 type WheelFeature = {
   title: string;
@@ -17,7 +21,7 @@ type WheelFeature = {
   symbol?: string;
 };
 
-const languageFeatures: Record<"japanese" | "italian", WheelFeature[]> = {
+const languageFeatures: Record<WheelLanguage, WheelFeature[]> = {
   japanese: [
     { title: "AI Tutor", href: "/japanese/tutor", icon: MessageCircle },
     { title: "Listening", href: "/japanese/listening", icon: Volume2 },
@@ -36,39 +40,75 @@ const languageFeatures: Record<"japanese" | "italian", WheelFeature[]> = {
     { title: "Grammar", href: "/italian/grammar", icon: BookOpenText },
     { title: "Verbs", href: "/italian/verbs", icon: TableProperties },
   ],
+  spanish: [
+    { title: "AI Tutor", href: "/spanish/tutor", icon: MessageCircle },
+    { title: "Listening", href: "/spanish/listening", icon: AudioLines },
+    { title: "Flashcards", href: "/spanish/flashcards", icon: Brain },
+    { title: "Arcade", href: "/spanish/arcade", icon: Gamepad2 },
+    { title: "Pronunciation", href: "/spanish/pronunciation", icon: Languages },
+    { title: "Grammar", href: "/spanish/grammar", icon: BookOpenText },
+    { title: "Verbs", href: "/spanish/verbs", icon: TableProperties },
+    { title: "Expressions", href: "/spanish/expressions", icon: PartyPopper },
+  ],
 };
 
-const wheelColors = {
+const wheelColors: Record<WheelLanguage, string[]> = {
   japanese: ["#f7d7e1", "#efb8ca", "#dc8fac", "#c96e92", "#a8577e", "#7f4569", "#59344f"],
   italian: ["#dce9df", "#acd0b8", "#6fa584", "#367b5a", "#bfa98b", "#d88a6e", "#b94e47"],
+  spanish: ["#f3c27a", "#e8893a", "#cf6332", "#b04a2a", "#d1436f", "#2f6db5", "#1f4e8c", "#3f8a62"],
+};
+
+const lightThemes = {
+  italian: {
+    className: "theme-italian",
+    background: "radial-gradient(circle at 50% 38%, rgba(255,255,255,.9), transparent 25rem), linear-gradient(145deg, #e7efe5 0%, #fff9ee 52%, #efd6cb 100%)",
+    eyebrow: "Italian Study · Benvenuto",
+    headline: "Build confident, natural Italian one small practice at a time.",
+    name: "Italian",
+  },
+  spanish: {
+    className: "theme-spanish",
+    background: "radial-gradient(circle at 50% 40%, rgba(255,255,255,.9), transparent 25rem), linear-gradient(145deg, #fde7c4 0%, #fff8ed 50%, #dbe5f3 100%)",
+    eyebrow: "Spanish Study · ¡Bienvenidos!",
+    headline: "Speak warm, natural Latin American Spanish one small practice at a time.",
+    name: "Spanish",
+  },
 };
 const center = 200;
 const outerRadius = 180;
 const innerRadius = 58;
 
-export function LanguageWheelHome({ language }: { language: "japanese" | "italian" }) {
+export function LanguageWheelHome({ language }: { language: WheelLanguage }) {
   const features = languageFeatures[language];
   const segmentAngle = 360 / features.length;
-  const isItalian = language === "italian";
+  const lightTheme = language === "japanese" ? null : lightThemes[language];
+  const isLightTheme = Boolean(lightTheme);
 
   return (
     <main
       className={
-        isItalian
-          ? "theme-italian relative isolate flex min-h-[calc(100svh-5.5rem)] flex-col justify-center overflow-hidden px-4 pb-10 pt-6 md:px-8"
+        lightTheme
+          ? `${lightTheme.className} relative isolate flex min-h-[calc(100svh-5.5rem)] flex-col justify-center overflow-hidden px-4 pb-10 pt-6 md:px-8`
           : "relative isolate flex min-h-[100svh] flex-col justify-center overflow-x-hidden bg-cover bg-center px-4 pb-8 pt-24 md:overflow-hidden md:px-8 md:pt-24"
       }
       style={
-        isItalian
-          ? { background: "radial-gradient(circle at 50% 38%, rgba(255,255,255,.9), transparent 25rem), linear-gradient(145deg, #e7efe5 0%, #fff9ee 52%, #efd6cb 100%)" }
+        lightTheme
+          ? { background: lightTheme.background }
           : { backgroundImage: "url('/home/sakura-fuji-bg.png')" }
       }
     >
-      {isItalian ? (
+      {language === "italian" ? (
         <>
           <div className="absolute -left-24 top-1/4 -z-10 h-72 w-72 rounded-full border-[2.5rem] border-[#2e7d5b]/10" />
           <div className="absolute -right-16 bottom-10 -z-10 h-64 w-64 rounded-full border-[2.5rem] border-[#bd463f]/10" />
           <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-[linear-gradient(90deg,#2e7d5b_0_33%,#fff9ee_33%_66%,#bd463f_66%)] opacity-[0.08]" />
+        </>
+      ) : language === "spanish" ? (
+        <>
+          <PapelPicado className="absolute inset-x-0 top-0 -z-10 opacity-70" count={16} />
+          <div className="absolute -left-24 top-1/3 -z-10 h-72 w-72 rounded-full border-[2.5rem] border-[#e8893a]/15" />
+          <div className="absolute -right-16 bottom-10 -z-10 h-64 w-64 rounded-full border-[2.5rem] border-[#2f6db5]/10" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-24 bg-[linear-gradient(90deg,#006847_0_33%,#fff8ed_33%_66%,#ce1126_66%)] opacity-[0.08]" />
         </>
       ) : (
         <>
@@ -80,28 +120,28 @@ export function LanguageWheelHome({ language }: { language: "japanese" | "italia
       <section className="mx-auto flex max-w-6xl flex-col items-center text-center">
         <div
           className={
-            isItalian
+            isLightTheme
               ? "max-w-2xl rounded-3xl border border-white/70 bg-white/55 px-5 py-3.5 shadow-sm backdrop-blur-md md:px-6 md:py-4"
               : "max-w-2xl rounded-3xl bg-ink/25 px-5 py-3.5 backdrop-blur-[3px] md:px-6 md:py-4"
           }
-          style={isItalian ? undefined : { textShadow: "0 2px 14px rgba(16, 24, 40, 0.65)" }}
+          style={isLightTheme ? undefined : { textShadow: "0 2px 14px rgba(16, 24, 40, 0.65)" }}
         >
-          <p className={isItalian ? "text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-matcha md:text-xs md:tracking-[0.36em]" : "text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sakura md:text-xs md:tracking-[0.36em]"}>
-            {isItalian ? "Italian Study · Benvenuto" : "Japanese Study"}
+          <p className={isLightTheme ? "text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-matcha md:text-xs md:tracking-[0.36em]" : "text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-sakura md:text-xs md:tracking-[0.36em]"}>
+            {lightTheme ? lightTheme.eyebrow : "Japanese Study"}
           </p>
-          <h1 className={isItalian ? "mt-2 text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl md:text-3xl" : "mt-2 text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl md:text-3xl"}>
-            {isItalian
-              ? "Build confident, natural Italian one small practice at a time."
+          <h1 className={isLightTheme ? "mt-2 text-xl font-bold leading-tight tracking-tight text-ink sm:text-2xl md:text-3xl" : "mt-2 text-xl font-bold leading-tight tracking-tight text-white sm:text-2xl md:text-3xl"}>
+            {lightTheme
+              ? lightTheme.headline
               : "Personalized Japanese practice powered by AI, audio, and review."}
           </h1>
-          <p className={isItalian ? "mt-2 text-[0.8rem] leading-5 text-slate-600 sm:text-sm sm:leading-6 md:text-base" : "mt-2 text-[0.8rem] leading-5 text-white/95 sm:text-sm sm:leading-6 md:text-base"}>
+          <p className={isLightTheme ? "mt-2 text-[0.8rem] leading-5 text-slate-600 sm:text-sm sm:leading-6 md:text-base" : "mt-2 text-[0.8rem] leading-5 text-white/95 sm:text-sm sm:leading-6 md:text-base"}>
             Choose a learning path from the wheel below and jump straight into focused practice.
           </p>
         </div>
 
         <nav aria-label={`${language} learning sections`} className="mt-5 w-full max-w-[min(32rem,max(15rem,calc(100svh_-_21rem)))] md:mt-6 md:max-w-[min(32rem,max(17rem,calc(100svh_-_20rem)))]">
           <svg className="h-auto w-full overflow-visible drop-shadow-2xl" role="img" viewBox="0 0 400 400">
-            <title>{`${isItalian ? "Italian" : "Japanese"} Study navigation wheel`}</title>
+            <title>{`${lightTheme ? lightTheme.name : "Japanese"} Study navigation wheel`}</title>
             <defs>
               <filter id={`${language}WheelGlow`} x="-20%" y="-20%" width="140%" height="140%">
                 <feDropShadow dx="0" dy="12" floodColor="#101828" floodOpacity="0.22" stdDeviation="10" />

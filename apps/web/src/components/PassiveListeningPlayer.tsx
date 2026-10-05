@@ -25,7 +25,14 @@ import { getPassiveListeningCategories } from "@/lib/api";
 import { detachAudio, pauseAudio, playAudioElement, replaceAudio } from "@/lib/audioPlayback";
 import { getItalianPassiveListeningCategories } from "@/lib/italianListening";
 import { recordStudyActivity } from "@/lib/progress";
+import { getSpanishPassiveListeningCategories } from "@/lib/spanishListening";
 import type { AudioAsset, PassiveListeningCategory } from "@/types/study";
+
+const categoryLoaders = {
+  japanese: getPassiveListeningCategories,
+  italian: getItalianPassiveListeningCategories,
+  spanish: getSpanishPassiveListeningCategories,
+};
 
 const categoryIcons: Record<string, LucideIcon> = {
   food: UtensilsCrossed,
@@ -47,7 +54,7 @@ function categoryIcon(categoryId: string) {
 export function PassiveListeningPlayer({
   language = "japanese",
 }: {
-  language?: "japanese" | "italian";
+  language?: keyof typeof categoryLoaders;
 }) {
   const [categories, setCategories] = useState<PassiveListeningCategory[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
@@ -62,12 +69,7 @@ export function PassiveListeningPlayer({
   const progressStorageKey = `${language}-study.passive-listening-progress`;
 
   useEffect(() => {
-    const loadCategories =
-      language === "italian"
-        ? getItalianPassiveListeningCategories
-        : getPassiveListeningCategories;
-
-    loadCategories()
+    categoryLoaders[language]()
       .then((items) => {
         const storedProgress = getStoredProgress(progressStorageKey);
         const storedCategory = items.find(
