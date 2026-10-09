@@ -1,3 +1,4 @@
+import { OnlineOnly } from "@/components/OnlineOnly";
 import { RealtimeTutor } from "@/components/RealtimeTutor";
 
 export default function TutorPage() {
@@ -13,7 +14,9 @@ export default function TutorPage() {
         </p>
       </div>
 
-      <RealtimeTutor />
+      <OnlineOnly feature="The tutor">
+        <RealtimeTutor />
+      </OnlineOnly>
     </main>
   );
 }

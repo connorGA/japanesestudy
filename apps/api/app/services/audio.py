@@ -1,5 +1,6 @@
 import hashlib
 import re
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from uuid import uuid4
 
@@ -32,6 +33,8 @@ class AudioService:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._assets: dict[str, AudioAsset] = {}
+        # Rows are keyed by a hash of text + voice + model, so a ready clip never changes.
+        self._ready_cache: dict[str, AudioAsset] = {}
         self._client: Optional[Client] = None
         if settings.supabase_url and settings.supabase_service_role_key:
             self._client = create_supabase_client(
@@ -387,22 +390,29 @@ class AudioService:
         if not self._client:
             return {}
 
-        assets_by_hash: dict[str, AudioAsset] = {}
+        assets_by_hash: dict[str, AudioAsset] = {
+            key: self._ready_cache[key] for key in cache_keys if key in self._ready_cache
+        }
+        missing = [key for key in cache_keys if key not in assets_by_hash]
         batch_size = 50
-        for start in range(0, len(cache_keys), batch_size):
+        batches = [missing[start : start + batch_size] for start in range(0, len(missing), batch_size)]
+
+        def load_batch(batch: list[str]) -> list[dict]:
             response = (
                 self._client.table("audio_assets")
                 .select("content_hash,id,text,status,public_url,error_message")
-                .in_("content_hash", cache_keys[start : start + batch_size])
+                .in_("content_hash", batch)
                 .execute()
             )
-            if response and response.data:
-                assets_by_hash.update(
-                    {
-                        row["content_hash"]: AudioAsset.model_validate(row)
-                        for row in response.data
-                    }
-                )
+            return response.data if response and response.data else []
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for rows in pool.map(load_batch, batches):
+                for row in rows:
+                    asset = AudioAsset.model_validate(row)
+                    assets_by_hash[row["content_hash"]] = asset
+                    if asset.status == "ready" and asset.public_url:
+                        self._ready_cache[row["content_hash"]] = asset
         return assets_by_hash
 
     def _create_and_queue(
@@ -474,10 +484,12 @@ class AudioService:
                 update={"status": "ready", "public_url": public_url, "error_message": None}
             )
             self._assets[cache_key] = ready_asset
+            self._ready_cache[cache_key] = ready_asset
             self._mark_ready(ready_asset)
         except Exception as err:
             failed_asset = asset.model_copy(update={"status": "failed", "error_message": str(err)})
             self._assets[cache_key] = failed_asset
+            self._ready_cache.pop(cache_key, None)
             try:
                 self._mark_failed(asset.id, str(err))
             except Exception:

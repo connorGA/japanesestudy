@@ -2,10 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Check, Search, Volume2, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Check, Flame, Search, Sparkles, Volume2, X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 import { recordStudyActivity } from "@/lib/progress";
 import { getFlashcards } from "@/lib/api";
+import {
+  activeTheme,
+  answerCard,
+  comboMultiplier,
+  isDue,
+  nextComboStep,
+  readGame,
+  tierFor,
+  useGameState,
+  useNow,
+  type CardMastery,
+} from "@/lib/game";
+import type { CardTheme } from "@/lib/gameRewards";
 import {
   isPlayInterruptedError,
   playAudioElement,
@@ -14,6 +28,7 @@ import {
 import type { AudioAsset, Flashcard, FlashcardSection } from "@/types/study";
 
 type Mode = "study" | "library";
+type Prompt = "english" | "japanese";
 
 const sections: { id: FlashcardSection; label: string }[] = [
   { id: "vocabulary", label: "Vocabulary" },
@@ -22,20 +37,34 @@ const sections: { id: FlashcardSection; label: string }[] = [
   { id: "kanji", label: "Kanji" },
 ];
 
-const SCORE_STORAGE_KEY = "japanese-study.flashcard-scores";
-
 export function FlashcardDeck() {
-  const [section, setSection] = useState<FlashcardSection>("vocabulary");
+  const searchParams = useSearchParams();
+  const [section, setSection] = useState<FlashcardSection>(() =>
+    parseSection(searchParams.get("section")),
+  );
   const [cardsBySection, setCardsBySection] = useState<
     Partial<Record<FlashcardSection, Flashcard[]>>
   >({});
   const [mode, setMode] = useState<Mode>("study");
-  const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [activeCardId, setActiveCardId] = useState<string | null>(() => searchParams.get("card"));
   const [flipped, setFlipped] = useState(false);
+  const [prompt, setPrompt] = useState<Prompt>("english");
   const [query, setQuery] = useState("");
-  const [scores, setScores] = useState<Record<string, number>>({});
+  const [combo, setCombo] = useState(0);
   const [status, setStatus] = useState("Loading flashcards…");
+  const game = useGameState();
+  const now = useNow();
   const cards = useMemo(() => cardsBySection[section] ?? [], [cardsBySection, section]);
+  const counts = useMemo(() => {
+    let due = 0;
+    let fresh = 0;
+    for (const card of cards) {
+      const mastery = game.mastery[card.id];
+      if (!mastery) fresh += 1;
+      else if (isDue(mastery, now)) due += 1;
+    }
+    return { due, fresh };
+  }, [cards, game.mastery, now]);
 
   useEffect(() => {
     if (cardsBySection[section]) return;
@@ -60,21 +89,10 @@ export function FlashcardDeck() {
   }, [cardsBySection, section]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(`${SCORE_STORAGE_KEY}.${section}`);
-    try {
-      setScores(stored ? (JSON.parse(stored) as Record<string, number>) : {});
-    } catch {
-      setScores({});
-    }
-    setActiveCardId(null);
-    setFlipped(false);
-    setQuery("");
-  }, [section]);
-
-  useEffect(() => {
     if (!cards.length || activeCardId) return;
-    setActiveCardId(pickWeightedCard(cards, scores).id);
-  }, [activeCardId, cards, scores]);
+    setActiveCardId(pickNextCard(cards, readGame().mastery, Date.now()).id);
+    setPrompt(randomPrompt());
+  }, [activeCardId, cards]);
 
   const filteredCards = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -105,36 +123,35 @@ export function FlashcardDeck() {
     }
     setSection(nextSection);
     setMode("study");
+    setActiveCardId(null);
+    setFlipped(false);
+    setQuery("");
   }
 
-  function updateScore(cardId: string, delta: 1 | -1) {
-    const nextScores = {
-      ...scores,
-      [cardId]: Math.max(0, (scores[cardId] ?? 0) + delta),
-    };
-    setScores(nextScores);
-    window.localStorage.setItem(
-      `${SCORE_STORAGE_KEY}.${section}`,
-      JSON.stringify(nextScores),
-    );
+  function answer(card: Flashcard, correct: boolean) {
+    const nextCombo = correct ? combo + 1 : 0;
+    answerCard({ cardId: card.id, label: card.kana, correct, combo: nextCombo });
+    setCombo(nextCombo);
     recordStudyActivity(
       "japanese",
-      delta > 0 ? "flashcard_mastered" : "flashcard_retry",
+      correct ? "flashcard_mastered" : "flashcard_retry",
       "flashcards",
-      { card_id: cardId, deck: section },
+      { card_id: card.id, deck: section },
     );
-    showNextStudyCard(nextScores);
+    showNextStudyCard();
   }
 
-  function showNextStudyCard(nextScores = scores) {
+  function showNextStudyCard() {
     if (!cards.length) return;
-    setActiveCardId(pickWeightedCard(cards, nextScores, activeCard?.id).id);
+    setActiveCardId(pickNextCard(cards, readGame().mastery, Date.now(), activeCard?.id).id);
+    setPrompt(randomPrompt());
     setFlipped(false);
   }
 
   function showLibraryCard(card: Flashcard) {
     setMode("library");
     setActiveCardId(card.id);
+    setPrompt("english");
     setFlipped(false);
   }
 
@@ -191,6 +208,13 @@ export function FlashcardDeck() {
             value={query}
           />
         </label>
+        {cards.length ? (
+          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm">
+            <span className={counts.due ? "text-[#c0456f]" : undefined}>{counts.due} due</span>
+            <span className="text-slate-300">·</span>
+            <span>{counts.fresh} new</span>
+          </span>
+        ) : null}
       </div>
 
       {!activeCard ? (
@@ -202,16 +226,20 @@ export function FlashcardDeck() {
           <FlipCard
             card={activeCard}
             flipped={flipped}
-            score={scores[activeCard.id] ?? 0}
+            prompt={prompt}
+            mastery={game.mastery[activeCard.id]}
+            theme={activeTheme(game)}
             onFlip={() => setFlipped((value) => !value)}
           />
+
+          {mode === "study" ? <ComboMeter combo={combo} /> : null}
 
           {mode === "study" && flipped ? (
             <div className="flex gap-3">
               <button
                 aria-label="Needs more practice"
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-700 shadow-sm transition hover:bg-red-200"
-                onClick={() => updateScore(activeCard.id, -1)}
+                onClick={() => answer(activeCard, false)}
                 type="button"
               >
                 <X className="h-6 w-6" />
@@ -219,7 +247,7 @@ export function FlashcardDeck() {
               <button
                 aria-label="I knew this"
                 className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-green-700 shadow-sm transition hover:bg-green-200"
-                onClick={() => updateScore(activeCard.id, 1)}
+                onClick={() => answer(activeCard, true)}
                 type="button"
               >
                 <Check className="h-6 w-6" />
@@ -260,17 +288,33 @@ export function FlashcardDeck() {
 function FlipCard({
   card,
   flipped,
-  score,
+  prompt,
+  mastery,
+  theme,
   onFlip,
 }: {
   card: Flashcard;
   flipped: boolean;
-  score: number;
+  prompt: Prompt;
+  mastery: CardMastery | undefined;
+  theme: CardTheme;
   onFlip: () => void;
 }) {
+  // The back face stays visible for the first half of the unflip, so it must keep
+  // showing the previous answer until the card is flipped again.
+  const [revealed, setRevealed] = useState({ card, prompt });
+  if (flipped && (revealed.card.id !== card.id || revealed.prompt !== prompt)) {
+    setRevealed({ card, prompt });
+  }
+
   const characterFirst = card.section !== "vocabulary";
-  const frontLabel = characterFirst ? sectionLabel(card.section) : "English";
-  const frontText = characterFirst ? card.kana : card.english;
+  const japaneseFirst = !characterFirst && prompt === "japanese";
+  const frontLabel = characterFirst
+    ? sectionLabel(card.section)
+    : japaneseFirst
+      ? "Japanese"
+      : "English";
+  const frontText = characterFirst || japaneseFirst ? card.kana : card.english;
 
   return (
     <div
@@ -287,39 +331,51 @@ function FlipCard({
       <div className={twMerge("flashcard-inner rounded-[2rem]", flipped && "is-flipped")}>
         <div
           className={twMerge(
-            "flashcard-face absolute inset-0 overflow-hidden rounded-[2rem] border border-black/10 bg-washi p-5 text-left shadow-xl sm:p-8",
+            "flashcard-face absolute inset-0 overflow-hidden rounded-[2rem] border border-black/10 p-5 text-left shadow-xl sm:p-8",
+            theme.faceClass,
             flipped ? "pointer-events-none" : "pointer-events-auto cursor-pointer",
           )}
           onClick={onFlip}
         >
-          <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-sakura/45 blur-2xl" />
+          <div
+            className={twMerge(
+              "pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full blur-2xl",
+              theme.glowClass,
+            )}
+          />
           <div className="pointer-events-none absolute -bottom-20 -left-16 h-64 w-64 rounded-full bg-matcha/10 blur-3xl" />
           <Image
             alt=""
-            className="pointer-events-none absolute bottom-0 left-0 w-[24rem] -translate-x-8 translate-y-6 opacity-80"
+            className={twMerge("pointer-events-none absolute", theme.artClass)}
             height={384}
-            src="/flashcards/sakura-branch-transparent.png"
+            src={theme.art}
             width={384}
           />
 
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div className="flex items-center justify-between gap-3">
-              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-matcha">
+              <span
+                className={twMerge(
+                  "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]",
+                  theme.chipClass,
+                )}
+              >
                 {frontLabel}
               </span>
-              <span className="rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-slate-600">
-                Score {score}
-              </span>
+              <TierBadge chipClass={theme.chipClass} mastery={mastery} />
             </div>
             <p
               className={twMerge(
-                "text-center font-semibold tracking-tight text-ink",
+                "text-center font-semibold tracking-tight",
+                theme.textClass,
                 characterFirst ? "text-7xl sm:text-8xl" : "text-4xl sm:text-5xl",
               )}
             >
               {frontText}
             </p>
-            <p className="text-center text-sm font-semibold text-slate-500">Click to flip</p>
+            <p className={twMerge("text-center text-sm font-semibold", theme.mutedClass)}>
+              Click to flip
+            </p>
           </div>
         </div>
 
@@ -331,12 +387,12 @@ function FlipCard({
           onClick={onFlip}
         >
           <div className="absolute inset-0 overflow-y-auto p-5 sm:p-8">
-            {card.section === "vocabulary" ? (
-              <VocabularyAnswer card={card} />
-            ) : card.section === "kanji" ? (
-              <KanjiAnswer card={card} />
+            {revealed.card.section === "vocabulary" ? (
+              <VocabularyAnswer card={revealed.card} prompt={revealed.prompt} />
+            ) : revealed.card.section === "kanji" ? (
+              <KanjiAnswer card={revealed.card} />
             ) : (
-              <KanaAnswer card={card} />
+              <KanaAnswer card={revealed.card} />
             )}
           </div>
         </div>
@@ -345,15 +401,21 @@ function FlipCard({
   );
 }
 
-function VocabularyAnswer({ card }: { card: Flashcard }) {
+function VocabularyAnswer({ card, prompt }: { card: Flashcard; prompt: Prompt }) {
+  const japaneseFirst = prompt === "japanese";
+
   return (
     <>
-      <AnswerHeader label="Japanese">
+      <AnswerHeader label={japaneseFirst ? "Meaning" : "Japanese"}>
         <AudioButton asset={card.word_audio} label={card.kana} />
       </AnswerHeader>
       <div className="mt-6 sm:mt-8">
-        <p className="text-4xl font-semibold text-ink sm:text-5xl">{card.kana}</p>
-        <p className="mt-2 text-lg font-semibold text-slate-600 sm:text-xl">{card.romaji}</p>
+        <p className="text-4xl font-semibold text-ink sm:text-5xl">
+          {japaneseFirst ? card.english : card.kana}
+        </p>
+        <p className="mt-2 text-lg font-semibold text-slate-600 sm:text-xl">
+          {japaneseFirst ? `${card.kana} · ${card.romaji}` : card.romaji}
+        </p>
       </div>
       <Example card={card} />
     </>
@@ -453,19 +515,94 @@ function modeButtonClass(active: boolean) {
     : "rounded-full border border-black/10 bg-white/80 px-5 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:bg-white hover:text-ink";
 }
 
-function pickWeightedCard(
+function TierBadge({ mastery, chipClass }: { mastery: CardMastery | undefined; chipClass: string }) {
+  const tier = tierFor(mastery?.stage);
+  return (
+    <span
+      className={twMerge(
+        "inline-flex items-center gap-1.5 rounded-full py-1 pl-1 pr-3 text-sm font-semibold",
+        chipClass,
+        !tier?.medallion && "pl-3",
+      )}
+    >
+      {tier?.medallion ? (
+        <Image alt="" className="h-6 w-6 object-contain" height={48} src={tier.medallion} width={48} />
+      ) : !tier ? (
+        <Sparkles className="h-3.5 w-3.5" />
+      ) : null}
+      {tier ? tier.name : "New"}
+    </span>
+  );
+}
+
+function ComboMeter({ combo }: { combo: number }) {
+  const multiplier = comboMultiplier(combo);
+  const next = nextComboStep(combo);
+  const previous = [0, 5, 10, 20].filter((step) => step <= combo).pop() ?? 0;
+  const percent = next ? ((combo - previous) / (next.combo - previous)) * 100 : 100;
+
+  return (
+    <div className="flex w-full max-w-xs flex-col items-center gap-1.5">
+      <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+        <Flame
+          className={twMerge(
+            "h-4 w-4 transition-colors",
+            multiplier >= 2 ? "text-[#e0663a]" : combo ? "text-[#d4688c]" : "text-slate-300",
+          )}
+        />
+        {combo ? <span>Combo {combo}</span> : <span className="text-slate-400">5 in a row for ×1.5 XP</span>}
+        {multiplier > 1 ? (
+          <span className="combo-pulse rounded-full bg-[#d4688c] px-2 py-0.5 text-xs font-bold text-white">
+            ×{multiplier}
+          </span>
+        ) : null}
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+        <div
+          className="h-full rounded-full bg-[linear-gradient(90deg,#f19ab8,#e0663a)] transition-[width] duration-300 ease-out"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {next && combo ? (
+        <p className="text-xs text-slate-400">
+          {next.combo - combo} more for ×{next.multiplier}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function parseSection(value: string | null): FlashcardSection {
+  return sections.some((item) => item.id === value) ? (value as FlashcardSection) : "vocabulary";
+}
+
+function randomPrompt(): Prompt {
+  return Math.random() < 0.5 ? "english" : "japanese";
+}
+
+function pickNextCard(
   cards: Flashcard[],
-  scores: Record<string, number>,
+  mastery: Record<string, CardMastery>,
+  now: number,
   excludeId?: string,
 ) {
   const pool = cards.length > 1 ? cards.filter((card) => card.id !== excludeId) : cards;
-  const weighted = pool.flatMap((card) => {
-    const score = scores[card.id] ?? 0;
-    const weight = Math.max(1, 8 - score);
-    return Array.from({ length: weight }, () => card);
-  });
+  const due = pool.filter((card) => mastery[card.id] && isDue(mastery[card.id], now));
+  const unseen = pool.filter((card) => !mastery[card.id]);
+  const roll = Math.random();
 
-  return weighted[Math.floor(Math.random() * weighted.length)] ?? pool[0];
+  if (due.length && roll < 0.7) return randomItem(due);
+  if (unseen.length && roll < (due.length ? 0.85 : 0.5)) return randomItem(unseen);
+
+  const weighted = pool.flatMap((card) => {
+    const stage = mastery[card.id]?.stage ?? 0;
+    return Array.from({ length: (6 - stage) ** 2 }, () => card);
+  });
+  return randomItem(weighted.length ? weighted : pool);
+}
+
+function randomItem<T>(items: T[]) {
+  return items[Math.floor(Math.random() * items.length)];
 }
 
 let sharedPronunciationAudio: HTMLAudioElement | null = null;

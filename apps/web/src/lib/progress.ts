@@ -6,6 +6,7 @@ import {
   type StudyActivity,
   type StudyLanguage,
 } from "@/lib/api";
+import { awardActivityXp } from "@/lib/game";
 
 export type { StudyActivity, StudyLanguage };
 export type ProgressStore = Record<StudyLanguage, Record<string, number>>;
@@ -13,6 +14,7 @@ export type ProgressStore = Record<StudyLanguage, Record<string, number>>;
 export const STUDY_LANGUAGES: readonly StudyLanguage[] = ["japanese", "italian", "spanish"];
 export const PROGRESS_STORAGE_KEY = "language-study.progress.v1";
 export const PROGRESS_EVENT = "language-study-progress";
+export const PROGRESS_SYNCED_EVENT = "language-study-progress-synced";
 
 const SHARED_LEARNER_ID = "9f5e3c7a-b5f9-4d9f-aef2-81d8ce6a3047";
 const PENDING_EVENTS_KEY = "language-study.pending-progress.v1";
@@ -33,6 +35,7 @@ export const STUDY_ACTIVITY_POINTS: Record<StudyActivity, number> = {
 };
 
 let flushPromise: Promise<void> | null = null;
+let hasBacklog = false;
 
 export function emptyProgress(): ProgressStore {
   return { japanese: {}, italian: {}, spanish: {} };
@@ -70,6 +73,9 @@ export function recordStudyActivity(
     (progress[language][activityDate] ?? 0) + STUDY_ACTIVITY_POINTS[activityType],
   );
   writeProgress(progress);
+  if (language === "japanese") {
+    awardActivityXp(activityType, STUDY_ACTIVITY_POINTS[activityType]);
+  }
 
   const event: ProgressEventInput = {
     id: crypto.randomUUID(),
@@ -142,15 +148,23 @@ function writePendingEvents(events: ProgressEventInput[]) {
 function flushPendingProgress() {
   if (flushPromise) return flushPromise;
   flushPromise = (async () => {
+    const clearingBacklog = hasBacklog || readPendingEvents().length > 1;
+    let synced = 0;
     while (true) {
       const [event] = readPendingEvents();
       if (!event) break;
       try {
         await recordProgressEvent(event);
       } catch {
+        hasBacklog = true;
         break;
       }
       writePendingEvents(readPendingEvents().filter((item) => item.id !== event.id));
+      synced++;
+    }
+    if (!readPendingEvents().length) hasBacklog = false;
+    if (synced && clearingBacklog) {
+      window.dispatchEvent(new CustomEvent(PROGRESS_SYNCED_EVENT, { detail: { count: synced } }));
     }
 
     if (!readPendingEvents().length) {

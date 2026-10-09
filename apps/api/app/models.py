@@ -112,6 +112,7 @@ class ListeningScenario(BaseModel):
     title: str
     description: str
     level: str
+    category: str = "Everyday"
     setting: str
     lines: list[ListeningLine]
 

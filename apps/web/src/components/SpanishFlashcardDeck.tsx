@@ -141,8 +141,12 @@ function SpanishFlipCard({
   onFlip: () => void;
   onPlay: (text: string, track: boolean) => void;
 }) {
-  const wordBusy = loadingText === card.spanish.trim();
-  const exampleBusy = loadingText === card.example.trim();
+  // The back face stays visible for the first half of the unflip, so it must keep
+  // showing the previous answer until the card is flipped again.
+  const [answer, setAnswer] = useState(card);
+  if (flipped && answer.id !== card.id) setAnswer(card);
+  const wordBusy = loadingText === answer.spanish.trim();
+  const exampleBusy = loadingText === answer.example.trim();
   return (
     <div className="flashcard-scene group h-[26rem] w-full max-w-xl sm:h-[30rem]" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onFlip(); } }} role="button" tabIndex={0}>
       <div className={twMerge("flashcard-inner rounded-[2rem]", flipped && "is-flipped")}>
@@ -164,15 +168,15 @@ function SpanishFlipCard({
           <div className="absolute inset-0 overflow-y-auto p-5 sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-matcha">Español · México</span>
-              <button aria-label={`Hear ${card.spanish}`} className={twMerge("grid h-11 w-11 place-items-center rounded-full bg-matcha text-white shadow-sm transition hover:scale-105", playingText === card.spanish.trim() && "ring-4 ring-matcha/25")} onClick={(event) => { event.stopPropagation(); onPlay(card.spanish, true); }} type="button">{wordBusy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}</button>
+              <button aria-label={`Hear ${answer.spanish}`} className={twMerge("grid h-11 w-11 place-items-center rounded-full bg-matcha text-white shadow-sm transition hover:scale-105", playingText === answer.spanish.trim() && "ring-4 ring-matcha/25")} onClick={(event) => { event.stopPropagation(); onPlay(answer.spanish, true); }} type="button">{wordBusy ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}</button>
             </div>
-            <p className="mt-8 text-4xl font-semibold text-ink sm:text-5xl">{card.spanish}</p>
-            {card.note ? <p className="mt-3 rounded-2xl bg-white/75 p-3 text-sm leading-6 text-slate-600">{card.note}</p> : null}
+            <p className="mt-8 text-4xl font-semibold text-ink sm:text-5xl">{answer.spanish}</p>
+            {answer.note ? <p className="mt-3 rounded-2xl bg-white/75 p-3 text-sm leading-6 text-slate-600">{answer.note}</p> : null}
             <div className="mt-8 border-t border-black/10 pt-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-matcha">In context</p>
-              <p className="mt-3 text-xl font-semibold text-ink">{card.example}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{card.exampleEnglish}</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-full border border-matcha/25 bg-white/70 px-3 py-2 text-xs font-semibold text-matcha" onClick={(event) => { event.stopPropagation(); onPlay(card.example, false); }} type="button">{exampleBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}Hear example</button>
+              <p className="mt-3 text-xl font-semibold text-ink">{answer.example}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{answer.exampleEnglish}</p>
+              <button className="mt-4 inline-flex items-center gap-2 rounded-full border border-matcha/25 bg-white/70 px-3 py-2 text-xs font-semibold text-matcha" onClick={(event) => { event.stopPropagation(); onPlay(answer.example, false); }} type="button">{exampleBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}Hear example</button>
             </div>
           </div>
         </div>

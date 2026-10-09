@@ -102,12 +102,7 @@ export function ItalianListeningHub({ language = "italian" }: { language?: HubLa
       </p>
 
       <div
-        className={twMerge(
-          "min-h-0 flex-1",
-          mode === "passive"
-            ? "lg:overflow-hidden"
-            : "lg:h-full lg:overflow-y-auto lg:overscroll-contain lg:pr-2",
-        )}
+        className="min-h-0 flex-1 lg:overflow-hidden"
       >
         {mode === "passive" ? (
           <PassiveListeningPlayer language={language} />

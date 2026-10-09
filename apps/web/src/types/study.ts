@@ -76,6 +76,7 @@ export type ListeningScenario = {
   title: string;
   description: string;
   level: string;
+  category?: string;
   setting: string;
   lines: ListeningLine[];
 };

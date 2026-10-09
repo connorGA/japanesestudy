@@ -12,7 +12,7 @@ import type {
   TutorResponse,
 } from "@/types/study";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8005";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8005";
 
 export type StudyLanguage = "japanese" | "italian" | "spanish";
 export type StudyActivity =

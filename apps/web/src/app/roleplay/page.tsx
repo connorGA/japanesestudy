@@ -1,3 +1,4 @@
+import { OnlineOnly } from "@/components/OnlineOnly";
 import { PageHeader } from "@/components/PageHeader";
 import { RoleplayPractice } from "@/components/RoleplayPractice";
 
@@ -9,7 +10,9 @@ export default function RoleplayPage() {
         eyebrow="Roleplay"
         title="Rehearse practical Japanese conversations."
       />
-      <RoleplayPractice />
+      <OnlineOnly feature="Roleplay">
+        <RoleplayPractice />
+      </OnlineOnly>
     </main>
   );
 }

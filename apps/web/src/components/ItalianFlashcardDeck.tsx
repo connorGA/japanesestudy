@@ -102,6 +102,10 @@ export function ItalianFlashcardDeck() {
 }
 
 function ItalianFlipCard({ card, flipped, score, onFlip }: { card: ItalianCard; flipped: boolean; score: number; onFlip: () => void }) {
+  // The back face stays visible for the first half of the unflip, so it must keep
+  // showing the previous answer until the card is flipped again.
+  const [answer, setAnswer] = useState(card);
+  if (flipped && answer.id !== card.id) setAnswer(card);
   return (
     <div className="flashcard-scene group h-[26rem] w-full max-w-xl sm:h-[30rem]" onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onFlip(); } }} role="button" tabIndex={0}>
       <div className={twMerge("flashcard-inner rounded-[2rem]", flipped && "is-flipped")}>
@@ -123,15 +127,15 @@ function ItalianFlipCard({ card, flipped, score, onFlip }: { card: ItalianCard; 
           <div className="absolute inset-0 overflow-y-auto p-5 sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-matcha">Italiano</span>
-              <button aria-label={`Hear ${card.italian}`} className="grid h-11 w-11 place-items-center rounded-full bg-matcha text-white shadow-sm transition hover:scale-105" onClick={(event) => { event.stopPropagation(); speakItalian(card.italian); recordStudyActivity("italian", "pronunciation_play", "flashcards", { card_id: card.id }); }} type="button"><Volume2 className="h-5 w-5" /></button>
+              <button aria-label={`Hear ${answer.italian}`} className="grid h-11 w-11 place-items-center rounded-full bg-matcha text-white shadow-sm transition hover:scale-105" onClick={(event) => { event.stopPropagation(); speakItalian(answer.italian); recordStudyActivity("italian", "pronunciation_play", "flashcards", { card_id: answer.id }); }} type="button"><Volume2 className="h-5 w-5" /></button>
             </div>
-            <p className="mt-8 text-4xl font-semibold text-ink sm:text-5xl">{card.italian}</p>
-            {card.note ? <p className="mt-3 rounded-2xl bg-white/75 p-3 text-sm leading-6 text-slate-600">{card.note}</p> : null}
+            <p className="mt-8 text-4xl font-semibold text-ink sm:text-5xl">{answer.italian}</p>
+            {answer.note ? <p className="mt-3 rounded-2xl bg-white/75 p-3 text-sm leading-6 text-slate-600">{answer.note}</p> : null}
             <div className="mt-8 border-t border-black/10 pt-6">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-matcha">In context</p>
-              <p className="mt-3 text-xl font-semibold text-ink">{card.example}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{card.exampleEnglish}</p>
-              <button className="mt-4 inline-flex items-center gap-2 rounded-full border border-matcha/25 bg-white/70 px-3 py-2 text-xs font-semibold text-matcha" onClick={(event) => { event.stopPropagation(); speakItalian(card.example); }} type="button"><Volume2 className="h-4 w-4" />Hear example</button>
+              <p className="mt-3 text-xl font-semibold text-ink">{answer.example}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{answer.exampleEnglish}</p>
+              <button className="mt-4 inline-flex items-center gap-2 rounded-full border border-matcha/25 bg-white/70 px-3 py-2 text-xs font-semibold text-matcha" onClick={(event) => { event.stopPropagation(); speakItalian(answer.example); }} type="button"><Volume2 className="h-4 w-4" />Hear example</button>
             </div>
           </div>
         </div>

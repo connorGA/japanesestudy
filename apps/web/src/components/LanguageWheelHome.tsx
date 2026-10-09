@@ -3,7 +3,9 @@ import {
   AudioLines,
   BookOpenText,
   Brain,
+  Flower2,
   Gamepad2,
+  Gem,
   Languages,
   MessageCircle,
   PartyPopper,
@@ -19,13 +21,16 @@ type WheelFeature = {
   href: string;
   icon?: LucideIcon;
   symbol?: string;
+  needsInternet?: boolean;
 };
 
 const languageFeatures: Record<WheelLanguage, WheelFeature[]> = {
   japanese: [
-    { title: "AI Tutor", href: "/japanese/tutor", icon: MessageCircle },
+    { title: "AI Tutor", href: "/japanese/tutor", icon: MessageCircle, needsInternet: true },
     { title: "Listening", href: "/japanese/listening", icon: Volume2 },
     { title: "Flashcards", href: "/japanese/flashcards", icon: Brain },
+    { title: "Collection", href: "/japanese/collection", icon: Gem },
+    { title: "Garden", href: "/japanese/garden", icon: Flower2 },
     { title: "Arcade", href: "/japanese/arcade", icon: Gamepad2 },
     { title: "Hiragana", href: "/japanese/hiragana", symbol: "あ" },
     { title: "Katakana", href: "/japanese/katakana", symbol: "ア" },
@@ -53,7 +58,7 @@ const languageFeatures: Record<WheelLanguage, WheelFeature[]> = {
 };
 
 const wheelColors: Record<WheelLanguage, string[]> = {
-  japanese: ["#f7d7e1", "#efb8ca", "#dc8fac", "#c96e92", "#a8577e", "#7f4569", "#59344f"],
+  japanese: ["#f7d7e1", "#f0bfd0", "#e6a3bb", "#d888a7", "#c96e92", "#b25f86", "#97517a", "#7a4468", "#59344f"],
   italian: ["#dce9df", "#acd0b8", "#6fa584", "#367b5a", "#bfa98b", "#d88a6e", "#b94e47"],
   spanish: ["#f3c27a", "#e8893a", "#cf6332", "#b04a2a", "#d1436f", "#2f6db5", "#1f4e8c", "#3f8a62"],
 };
@@ -153,7 +158,7 @@ export function LanguageWheelHome({ language }: { language: WheelLanguage }) {
               const labelPoint = polarToCartesian(125, index * segmentAngle + segmentAngle / 2);
               const Icon = feature.icon;
               return (
-                <a aria-label={feature.title} href={feature.href} key={feature.href}>
+                <a aria-label={feature.title} className={feature.needsInternet ? "[html[data-offline]_&]:opacity-50" : undefined} href={feature.href} key={feature.href}>
                   <path className="stroke-white/70 stroke-[3] transition duration-200 hover:brightness-110" d={wheelSegmentPath(index, segmentAngle)} fill={wheelColors[language][index]} filter={`url(#${language}WheelGlow)`} />
                   <foreignObject className="pointer-events-none" height="78" width="104" x={labelPoint.x - 52} y={labelPoint.y - 39}>
                     <div className="flex h-full flex-col items-center justify-center gap-1 text-center text-white" style={{ textShadow: "0 1px 6px rgba(16, 24, 40, 0.55)" }}>
@@ -161,6 +166,9 @@ export function LanguageWheelHome({ language }: { language: WheelLanguage }) {
                         {Icon ? <Icon className="h-5 w-5" /> : <span className="text-xl font-bold leading-none">{feature.symbol}</span>}
                       </span>
                       <span className="text-[12px] font-bold leading-tight">{feature.title}</span>
+                      {feature.needsInternet ? (
+                        <span className="hidden text-[9px] font-semibold uppercase leading-none tracking-wide [html[data-offline]_&]:block">Needs internet</span>
+                      ) : null}
                     </div>
                   </foreignObject>
                 </a>

@@ -1,5 +1,6 @@
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional
 from uuid import UUID
 
 from app.config import get_settings
@@ -281,10 +282,10 @@ def flashcards(
 
 @app.get("/api/listening/scenarios")
 def listening_scenarios(background_tasks: BackgroundTasks) -> list[ListeningScenario]:
-    scenarios: list[ListeningScenario] = []
+    voices_by_scenario: dict[str, dict[str, Optional[str]]] = {}
     for scenario in LISTENING_SCENARIOS:
         speakers = list(dict.fromkeys(line.speaker for line in scenario.lines))
-        voice_by_speaker = {
+        voices_by_scenario[scenario.id] = {
             speaker: (
                 settings.elevenlabs_voice_id_2
                 if index % 2 == 1 and settings.elevenlabs_voice_id_2
@@ -292,17 +293,25 @@ def listening_scenarios(background_tasks: BackgroundTasks) -> list[ListeningScen
             )
             for index, speaker in enumerate(speakers)
         }
-        audio_items = [
-            (line.japanese, voice_by_speaker.get(line.speaker))
-            for line in scenario.lines
-        ]
-        audio_assets = audio.get_many_or_queue_for_voices(audio_items, background_tasks)
 
+    audio_assets = audio.get_many_or_queue_for_voices(
+        [
+            (line.japanese, voices_by_scenario[scenario.id].get(line.speaker))
+            for scenario in LISTENING_SCENARIOS
+            for line in scenario.lines
+        ],
+        background_tasks,
+    )
+
+    scenarios: list[ListeningScenario] = []
+    for scenario in LISTENING_SCENARIOS:
+        voice_by_speaker = voices_by_scenario[scenario.id]
         scenarios.append(ListeningScenario(
             id=scenario.id,
             title=scenario.title,
             description=scenario.description,
             level=scenario.level,
+            category=scenario.category,
             setting=scenario.setting,
             lines=[
                 ListeningLine(

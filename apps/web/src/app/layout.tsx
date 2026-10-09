@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { GameFeedback } from "@/components/game/GameFeedback";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { ProgressTracker } from "@/components/ProgressTracker";
 import { TopNav } from "@/components/TopNav";
 import "./globals.css";
@@ -16,8 +18,13 @@ export const metadata: Metadata = {
       { url: "/brand/favicon-48.png", sizes: "48x48", type: "image/png" },
       { url: "/brand/favicon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/brand/favicon-180.png", sizes: "180x180", type: "image/png" }],
+    apple: [{ url: "/brand/pwa/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
     shortcut: "/brand/favicon-32.png",
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Japanese",
+    statusBarStyle: "default",
   },
   openGraph: {
     title: "Language Study",
@@ -42,6 +49,8 @@ export default function RootLayout({
       <body>
         <TopNav />
         <ProgressTracker />
+        <GameFeedback />
+        <OfflineBanner />
         {children}
       </body>
     </html>

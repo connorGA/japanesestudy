@@ -6,11 +6,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { MuteButton, XpBar } from "@/components/game/XpBar";
+import { OfflineMenuRow } from "@/components/OfflineDownload";
+import { useOnline } from "@/lib/useOnline";
 
-const japaneseItems = [
+type NavItem = { href: string; label: string; needsInternet?: boolean };
+
+const japaneseItems: NavItem[] = [
   { href: "/japanese", label: "Home" },
-  { href: "/japanese/tutor", label: "Tutor" },
+  { href: "/japanese/tutor", label: "Tutor", needsInternet: true },
   { href: "/japanese/flashcards", label: "Flashcards" },
+  { href: "/japanese/collection", label: "Collection" },
+  { href: "/japanese/garden", label: "Garden" },
   { href: "/japanese/listening", label: "Listening" },
   { href: "/japanese/arcade", label: "Arcade" },
   { href: "/japanese/hiragana", label: "Hiragana" },
@@ -56,7 +63,8 @@ export function TopNav() {
   const isJapanese = pathname.startsWith("/japanese");
   const isSpanish = pathname.startsWith("/spanish");
   const theme = isItalian ? "italian" : isJapanese ? "japanese" : isSpanish ? "spanish" : "dashboard";
-  const items = isItalian
+  const online = useOnline();
+  const items: NavItem[] = isItalian
     ? italianItems
     : isJapanese
       ? japaneseItems
@@ -136,12 +144,19 @@ export function TopNav() {
           </span>
         </Link>
 
+        {isJapanese ? (
+          <div className="flex shrink-0 flex-1 justify-end xl:flex-none xl:justify-start">
+            <XpBar transparent={isTransparentHome} />
+          </div>
+        ) : null}
+
         <button
           aria-controls="mobile-nav-menu"
           aria-expanded={menuOpen}
           aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
           className={twMerge(
-            "grid h-12 w-12 shrink-0 place-items-center rounded-full border backdrop-blur-md transition lg:hidden",
+            "grid h-12 w-12 shrink-0 place-items-center rounded-full border backdrop-blur-md transition",
+            isJapanese ? "xl:hidden" : "lg:hidden",
             isTransparentHome
               ? "border-white/25 bg-white/10 text-white"
               : "border-white/60 bg-white/70 text-ink shadow-sm",
@@ -154,14 +169,16 @@ export function TopNav() {
 
         <div
           className={twMerge(
-            "hidden gap-2 p-1 lg:flex",
+            "hidden min-w-0 gap-2 p-1",
+            isJapanese ? "xl:flex" : "lg:flex",
             theme === "dashboard" ? "overflow-visible" : "overflow-x-auto",
           )}
         >
           {items.map((item) => (
             <Link
               className={twMerge(
-                "relative isolate overflow-hidden whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold backdrop-blur-md transition",
+                "relative isolate shrink-0 overflow-hidden whitespace-nowrap rounded-full border py-2 text-sm font-semibold backdrop-blur-md transition",
+                isJapanese ? "px-3 2xl:px-4" : "px-4",
                 isTransparentHome
                   ? "border-white/25 bg-white/10 text-white/85 hover:bg-white/20 hover:text-white"
                   : "border-white/60 bg-white/60 text-slate-700 shadow-sm hover:bg-white/90 hover:text-ink",
@@ -178,9 +195,11 @@ export function TopNav() {
                   (isTransparentHome
                     ? "border-white/50 bg-white/25 text-white drop-shadow"
                     : "border-ink/80 bg-ink/85 text-white hover:bg-ink hover:text-white"),
+                item.needsInternet && !online && "opacity-50",
               )}
               href={item.href}
               key={item.href}
+              title={item.needsInternet && !online ? "Needs internet" : undefined}
             >
               {theme === "dashboard" ? <CountryNavDecoration href={item.href} /> : null}
               <span className="relative z-10">{item.label}</span>
@@ -190,7 +209,10 @@ export function TopNav() {
       </nav>
 
       {menuOpen ? (
-        <div className="absolute inset-x-0 top-full px-4 pb-3 lg:hidden" id="mobile-nav-menu">
+        <div
+          className={twMerge("absolute inset-x-0 top-full px-4 pb-3", isJapanese ? "xl:hidden" : "lg:hidden")}
+          id="mobile-nav-menu"
+        >
           <div className="grid grid-cols-2 gap-2 rounded-3xl border border-white/60 bg-white/90 p-2 shadow-lg backdrop-blur-md sm:grid-cols-4">
             {items.map((item) => (
               <Link
@@ -208,6 +230,7 @@ export function TopNav() {
                   theme === "dashboard" &&
                     item.href === "/spanish" &&
                     "bg-[linear-gradient(135deg,#fff3e2,#fff,#eaf1fc)] text-[#8a3a1f]",
+                  item.needsInternet && !online && "opacity-60",
                 )}
                 href={item.href}
                 key={item.href}
@@ -215,8 +238,19 @@ export function TopNav() {
               >
                 {theme === "dashboard" ? <CountryNavDecoration href={item.href} /> : null}
                 <span className="relative z-10">{item.label}</span>
+                {item.needsInternet && !online ? (
+                  <span className="relative z-10 block text-[0.65rem] font-medium opacity-80">Needs internet</span>
+                ) : null}
               </Link>
             ))}
+            {isJapanese ? (
+              <MuteButton
+                className="col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-white/70 px-4 py-3 text-sm font-semibold text-slate-700 transition active:bg-white sm:hidden"
+                iconClassName="h-4 w-4"
+                showLabel
+              />
+            ) : null}
+            {isJapanese ? <OfflineMenuRow className="col-span-2 sm:col-span-4" /> : null}
           </div>
         </div>
       ) : null}

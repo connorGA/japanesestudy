@@ -46,6 +46,10 @@ body {
     linear-gradient(135deg, #fffaf0 0%, #f6f7ef 100%);
 }
 
+html[data-offline] body {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
 body[data-theme="italian"] {
   background:
     radial-gradient(circle at top right, rgba(190, 55, 48, 0.14), transparent 30rem),
@@ -149,6 +153,210 @@ select {
 .flashcard-face-back {
   transform: rotateY(180deg);
   -webkit-transform: rotateY(180deg);
+}
+
+/* Game feedback */
+@keyframes xp-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.12);
+  }
+  30% {
+    transform: translateY(-0.4rem) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4.5rem) scale(0.95);
+  }
+}
+
+.xp-pop {
+  animation: xp-pop 1.4s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes combo-burst {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-6deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.15) rotate(2deg);
+  }
+  35% {
+    transform: scale(1) rotate(0);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.05) translateY(-1rem);
+  }
+}
+
+.combo-burst {
+  animation: combo-burst 1.6s ease-out forwards;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.toast-in {
+  animation: toast-in 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+
+@keyframes level-up-card {
+  0% {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.85);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-0.3rem) scale(1.03);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.level-up-card {
+  animation: level-up-card 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes petal-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3) rotate(0);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 6rem)) scale(1) rotate(var(--rot));
+  }
+}
+
+.petal-burst {
+  animation: petal-burst 1.8s cubic-bezier(0.15, 0.7, 0.3, 1) both;
+}
+
+@keyframes combo-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.combo-pulse {
+  animation: combo-pulse 0.9s ease-in-out infinite;
+}
+
+/* Zen garden */
+@keyframes garden-fade-in {
+  from {
+    opacity: 0;
+    filter: blur(6px) brightness(1.15);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) brightness(1);
+  }
+}
+
+.garden-fade-in {
+  animation: garden-fade-in 2.4s ease both;
+}
+
+@keyframes garden-petal-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -2rem, 0) rotate(0deg);
+  }
+  10% {
+    opacity: 0.95;
+  }
+  90% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 115cqh, 0) rotate(var(--spin));
+  }
+}
+
+.garden-petal {
+  animation: garden-petal-fall var(--duration) linear infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes lantern-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+}
+
+.lantern-glow {
+  animation: lantern-glow 3.6s ease-in-out infinite;
+}
+
+@keyframes pond-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.pond-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 45%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: pond-shimmer 6s linear infinite;
+  mix-blend-mode: soft-light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xp-pop,
+  .combo-burst,
+  .toast-in,
+  .level-up-card,
+  .petal-burst,
+  .combo-pulse,
+  .garden-fade-in,
+  .garden-petal,
+  .lantern-glow,
+  .pond-shimmer {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
 }
 
 /* Kana Cube arcade game */
